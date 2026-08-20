@@ -236,21 +236,54 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
     setDragY(0);
   };
 
-  // Hanging position offset
-  const baseDropY = isListening ? 70 : -10;
-  const currentDropY = isDragging ? (isListening ? 70 : -10) + dragY : baseDropY;
-  const pulseScale = isListening ? Math.min(1.08, 1 + volumeLevel * 0.25) : 1;
+  // Mic vertical positions
+  const baseMicY = isListening ? 180 : 70;
+  const currentMicY = isDragging ? (isListening ? 180 : 70) + dragY : baseMicY;
+  const pulseScale = isListening ? Math.min(1.12, 1 + volumeLevel * 0.3) : 1;
 
   return (
     <div className="fixed inset-0 pointer-events-none z-30 select-none overflow-visible">
       {/* ======================================================== */}
-      {/* 1. LIVE SPEECH BALLOON & AUDIO VU EQUALIZER              */}
+      {/* 1. TOP CEILING MOUNT DISH (Fixed Permanently at Ceiling)  */}
+      {/* ======================================================== */}
+      <div
+        style={{ right: `${mountRight - 70}px`, top: 0, width: '140px', height: '38px' }}
+        className="absolute z-20 pointer-events-auto flex items-center justify-center filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)]"
+      >
+        <img
+          src="/assets/vintage_ceiling_mount.png"
+          alt="Ceiling Mount"
+          className="w-full h-full object-contain pointer-events-none"
+          draggable={false}
+        />
+      </div>
+
+      {/* ======================================================== */}
+      {/* 2. DYNAMIC STRETCHING BRAIDED CABLE (Extends from Ceiling)*/}
+      {/* ======================================================== */}
+      <div
+        style={{
+          right: `${mountRight - 5}px`,
+          top: '34px',
+          height: `${Math.max(0, currentMicY - 26)}px`,
+          width: '10px',
+          backgroundImage: "url('/assets/vintage_cable_tile.png')",
+          backgroundRepeat: 'repeat-y',
+          backgroundSize: '10px auto',
+          backgroundPosition: 'center top',
+          transition: isDragging ? 'none' : 'height 400ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+        }}
+        className="absolute z-10 pointer-events-none filter drop-shadow-[2px_2px_0px_rgba(0,0,0,0.8)]"
+      />
+
+      {/* ======================================================== */}
+      {/* 3. LIVE SPEECH BALLOON & AUDIO VU EQUALIZER              */}
       {/* ======================================================== */}
       {isListening && (
         <div
           style={{
-            right: `${mountRight + 120}px`,
-            top: `${currentDropY + 160}px`,
+            right: `${mountRight + 110}px`,
+            top: `${currentMicY - 30}px`,
           }}
           className="absolute pointer-events-auto w-80 p-5 bg-[#FFFDF8] text-slate-900 border-3 border-black rounded-3xl shadow-[8px_8px_0px_#000] animate-slide-up z-30"
         >
@@ -329,13 +362,13 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
       )}
 
       {/* ======================================================== */}
-      {/* 2. UNIFIED HANGING STUDIO MICROPHONE UNIT (100% Solid)    */}
+      {/* 4. RETRO STUDIO MICROPHONE CAPSULE (Translates on Wire)   */}
       {/* ======================================================== */}
       <div
         style={{
-          right: `${mountRight - 70}px`,
-          top: `${currentDropY}px`,
-          width: '145px',
+          right: `${mountRight - 67}px`,
+          top: `${currentMicY}px`,
+          width: '134px',
           transition: isDragging ? 'none' : 'top 400ms cubic-bezier(0.34, 1.56, 0.64, 1)',
         }}
         onClick={onMicClick}
@@ -346,7 +379,7 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
       >
         {/* Pulsing Helper Prompt in Initial Pitch Black state */}
         {!isRevealed && !isListening && (
-          <div className="absolute top-28 px-4 py-1.5 bg-[#FFE500] text-black font-black text-xs border-2 border-black rounded-full shadow-[4px_4px_0px_#000] whitespace-nowrap flex items-center space-x-1.5 animate-bounce font-display z-30">
+          <div className="absolute -top-12 px-4 py-1.5 bg-[#FFE500] text-black font-black text-xs border-2 border-black rounded-full shadow-[4px_4px_0px_#000] whitespace-nowrap flex items-center space-x-1.5 animate-bounce font-display z-30">
             <Sparkles className="w-3.5 h-3.5 fill-current text-black" />
             <span>PULL OR CLICK MIC TO ENTER GOA</span>
             <MoveDown className="w-3.5 h-3.5 stroke-[3]" />
@@ -354,28 +387,28 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
         )}
 
         {isRevealed && !isListening && (
-          <div className="absolute top-32 px-3.5 py-1 bg-[#00F5D4] text-black font-black text-[11px] border-2 border-black rounded-full shadow-[3px_3px_0px_#000] whitespace-nowrap flex items-center space-x-1 font-display z-30">
+          <div className="absolute -top-10 px-3.5 py-1 bg-[#00F5D4] text-black font-black text-[11px] border-2 border-black rounded-full shadow-[3px_3px_0px_#000] whitespace-nowrap flex items-center space-x-1 font-display z-30">
             <span>PULL DOWN TO SPEAK</span>
             <MoveDown className="w-3 h-3 stroke-[2.5]" />
           </div>
         )}
 
-        {/* Unified Whole Asset: Ceiling Mount + Braided Cable + Mic Capsule */}
+        {/* Microphone Body with Top Collar Anchor */}
         <div
-          className="relative w-full filter drop-shadow-[10px_10px_0px_rgba(0,0,0,0.85)] group-hover:scale-105 group-active:scale-95 transition-transform duration-150 origin-top"
-          style={{ transform: `scale(${pulseScale})` }}
+          className="relative w-full filter drop-shadow-[8px_8px_0px_rgba(0,0,0,0.85)] group-hover:scale-105 group-active:scale-95 transition-transform duration-150"
+          style={{ transform: `scale(${pulseScale})`, transformOrigin: '49% 0px' }}
         >
           {/* Soundwave Aura when Recording */}
           {isListening && (
             <div
               style={{ transform: `scale(${1 + volumeLevel * 1.3})` }}
-              className="absolute bottom-6 left-2 right-2 h-44 rounded-3xl bg-[#FFE500]/30 blur-lg transition-transform duration-75 pointer-events-none"
+              className="absolute inset-0 rounded-3xl bg-[#FFE500]/30 blur-md transition-transform duration-75 pointer-events-none"
             />
           )}
 
           <img
-            src="/assets/vintage_hanging_mic_unified.png"
-            alt="Vintage Hanging Studio Microphone"
+            src="/assets/vintage_mic_capsule.png"
+            alt="Vintage Studio Microphone"
             className="w-full h-auto object-contain pointer-events-none"
             draggable={false}
           />
