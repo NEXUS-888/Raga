@@ -8,11 +8,11 @@ router = APIRouter(prefix="/stt", tags=["Speech To Text"])
 @router.post("/transcribe")
 async def transcribe_audio(
     file: UploadFile = File(...),
-    provider: str = Form("sarvam"),
+    provider: str = Form("groq"),
     language_code: str = Form("en-IN")
 ) -> Dict[str, Any]:
     """
-    Transcribes spoken voice audio using Sarvam AI (Saaras) or ElevenLabs (Scribe).
+    Transcribes spoken voice audio using Groq Whisper, Sarvam AI (Saaras) or ElevenLabs (Scribe).
     """
     audio_bytes = await file.read()
     if not audio_bytes:
@@ -39,9 +39,14 @@ async def get_providers_status() -> Dict[str, Any]:
     """
     return {
         "active_default": settings.stt_provider,
+        "groq": {
+            "configured": bool(settings.groq_api_key),
+            "model": "whisper-large-v3-turbo",
+            "supported_languages": ["en", "hi", "multilingual"]
+        },
         "sarvam": {
             "configured": bool(settings.sarvam_api_key),
-            "model": "saaras:v1",
+            "model": "saaras:v3",
             "supported_languages": ["en-IN", "hi-IN", "bn-IN", "gu-IN", "kn-IN", "ml-IN", "mr-IN", "or-IN", "pa-IN", "ta-IN", "te-IN"]
         },
         "elevenlabs": {

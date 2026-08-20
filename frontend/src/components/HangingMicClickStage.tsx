@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, MoveDown, Square, Volume2, Mic, ArrowRight } from 'lucide-react';
+import { pcmToWavBlob, mergePcmChunks, resamplePcm } from '../utils/audioWavEncoder';
 
 interface HangingMicClickStageProps {
   isRevealed: boolean;
   onMicClick: () => void;
   onTranscriptReady: (transcript: string, audioBlob?: Blob) => void;
   isListening: boolean;
+  language?: string;
 }
 
 export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
@@ -13,6 +15,7 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
   onMicClick,
   onTranscriptReady,
   isListening,
+  language = 'en',
 }) => {
   const [liveTranscript, setLiveTranscript] = useState('');
   const [volumeLevel, setVolumeLevel] = useState(0);
@@ -22,13 +25,14 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
   const recognitionRef = useRef<any>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const pcmChunksRef = useRef<Float32Array[]>([]);
   const animFrameRef = useRef<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const wasListeningRef = useRef<boolean>(false);
+  const suppressClickRef = useRef<boolean>(false);
 
-  // Initialize Web Speech Recognition
+  // Initialize Web Speech Recognition for live preview assist
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
@@ -36,7 +40,7 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
         const recognizer = new SpeechRecognition();
         recognizer.continuous = true;
         recognizer.interimResults = true;
-        recognizer.lang = 'en-IN';
+        recognizer.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
 
         recognizer.onresult = (event: any) => {
           let fullText = '';
@@ -61,6 +65,12 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
     }
   }, []);
 
+  useEffect(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
+    }
+  }, [language]);
+
   // Audio capture lifecycle
   useEffect(() => {
     if (isListening) {
@@ -69,11 +79,6 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
       setLiveTranscript('');
       setAudioDetected(false);
       startLiveAudioStream();
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.start();
-        } catch (e) {}
-      }
     } else {
       if (wasListeningRef.current) {
         wasListeningRef.current = false;
@@ -87,58 +92,55 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
     }
   }, [isListening]);
 
-  // Real-time Microphone Audio Capture with MediaRecorder + AudioContext Analyser
+  // Real-time Raw 16kHz PCM Microphone Audio Capture
   const startLiveAudioStream = async () => {
     try {
-      audioChunksRef.current = [];
+      pcmChunksRef.current = [];
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
+          channelCount: 1,
         },
       });
       streamRef.current = stream;
 
-      // 1. Hardware MediaRecorder (guaranteed audio packet capture)
-      try {
-        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-          ? 'audio/webm;codecs=opus'
-          : MediaRecorder.isTypeSupported('audio/webm')
-          ? 'audio/webm'
-          : MediaRecorder.isTypeSupported('audio/mp4')
-          ? 'audio/mp4'
-          : '';
-        const mr = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-        mr.ondataavailable = (e) => {
-          if (e.data && e.data.size > 0) {
-            audioChunksRef.current.push(e.data);
-          }
-        };
-        mr.start(100);
-        mediaRecorderRef.current = mr;
-      } catch (mrErr) {
-        console.warn("MediaRecorder init notice:", mrErr);
-      }
-
-      // 2. AudioContext for Real-Time VU Equalizer & Sound Wave Aura
+      // AudioContext for Direct Raw PCM Ingestion & VU Analysis
       const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
       if (AudioCtxClass) {
         const audioCtx = new AudioCtxClass();
         if (audioCtx.state === 'suspended') {
           await audioCtx.resume();
         }
+        audioCtxRef.current = audioCtx;
+
         const analyser = audioCtx.createAnalyser();
         analyser.fftSize = 64;
         analyser.smoothingTimeConstant = 0.35;
+        analyserRef.current = analyser;
 
         const source = audioCtx.createMediaStreamSource(stream);
         source.connect(analyser);
 
-        audioCtxRef.current = audioCtx;
-        analyserRef.current = analyser;
+        // Raw PCM Audio Buffer Processor (4096 buffer size, 1 channel)
+        const processor = audioCtx.createScriptProcessor(4096, 1, 1);
+        processor.onaudioprocess = (e) => {
+          const inputData = e.inputBuffer.getChannelData(0);
+          pcmChunksRef.current.push(new Float32Array(inputData));
+        };
+        source.connect(processor);
+        processor.connect(audioCtx.destination);
+        processorRef.current = processor;
 
         trackMicrophoneVolume();
+      }
+
+      // Start speech recognition after mic permission is established
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.start();
+        } catch (e) {}
       }
     } catch (err) {
       console.warn("Microphone access notice:", err);
@@ -172,44 +174,40 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
   const stopLiveAudioStream = () => {
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
 
-    const mr = mediaRecorderRef.current;
-    let recordedBlob: Blob | undefined;
+    const audioCtx = audioCtxRef.current;
+    const pcmChunks = pcmChunksRef.current;
+    const sourceSampleRate = audioCtx?.sampleRate || 44100;
 
-    const finalizeAndSend = () => {
-      if (audioChunksRef.current.length > 0) {
-        const mimeType = mr?.mimeType || 'audio/webm';
-        recordedBlob = new Blob(audioChunksRef.current, { type: mimeType });
-      }
-
-      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
-        try {
-          audioCtxRef.current.close();
-        } catch (e) {}
-        audioCtxRef.current = null;
-      }
-
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-        streamRef.current = null;
-      }
-
-      const finalTranscript = (transcriptRef.current || liveTranscript).trim();
-      onTranscriptReady(finalTranscript, recordedBlob);
-      setVolumeLevel(0);
-    };
-
-    if (mr && mr.state !== 'inactive') {
-      mr.onstop = () => {
-        finalizeAndSend();
-      };
+    if (processorRef.current) {
       try {
-        mr.stop();
-      } catch (e) {
-        finalizeAndSend();
-      }
-    } else {
-      finalizeAndSend();
+        processorRef.current.disconnect();
+      } catch (e) {}
+      processorRef.current = null;
     }
+
+    if (audioCtx && audioCtx.state !== 'closed') {
+      try {
+        audioCtx.close();
+      } catch (e) {}
+      audioCtxRef.current = null;
+    }
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+
+    // Convert all collected PCM chunks to a valid 16kHz mono WAV Blob
+    let wavBlob: Blob | undefined;
+    if (pcmChunks.length > 0) {
+      const mergedSamples = mergePcmChunks(pcmChunks);
+      const resampledSamples = resamplePcm(mergedSamples, sourceSampleRate, 16000);
+      wavBlob = pcmToWavBlob(resampledSamples, 16000);
+    }
+
+    const finalTranscript = (transcriptRef.current || liveTranscript).trim();
+    onTranscriptReady(finalTranscript, wavBlob);
+    setVolumeLevel(0);
   };
 
   // Mic anchor coordinates
@@ -240,10 +238,19 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
     } catch (err) {}
 
     if (dragY > 35) {
-      // User pulled down significantly -> toggle mic listening
+      suppressClickRef.current = true;
       onMicClick();
     }
     setDragY(0);
+  };
+
+  const handleMicActivate = (e: React.MouseEvent) => {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false;
+      e.preventDefault();
+      return;
+    }
+    onMicClick();
   };
 
   // Mic vertical positions
@@ -381,7 +388,7 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
           width: '134px',
           transition: isDragging ? 'none' : 'top 400ms cubic-bezier(0.34, 1.56, 0.64, 1)',
         }}
-        onClick={onMicClick}
+        onClick={handleMicActivate}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}

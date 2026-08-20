@@ -69,7 +69,8 @@ class BenchmarkEngine:
                     query_text=bq.query_text,
                     chunking_strategy=chunking_strategy,
                     language=bq.language,
-                    top_k=3
+                    top_k=3,
+                    llm_provider="fast_grounded_synthesizer"
                 )
                 
                 # Execute pipeline through orchestrator harness

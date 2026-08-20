@@ -11,7 +11,7 @@ import { FloatingOrganicAnswer } from './components/FloatingOrganicAnswer';
 import { SpecsDrawer } from './components/SpecsDrawer';
 import type { VoiceRAGResponse } from './types';
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = "http://localhost:8001";
 
 export const App: React.FC = () => {
   const [isRevealed, setIsRevealed] = useState<boolean>(false);
@@ -64,6 +64,7 @@ export const App: React.FC = () => {
         const formData = new FormData();
         let filename = 'voice_recording.wav';
         if (audioBlob.type.includes('webm')) filename = 'voice_recording.webm';
+        else if (audioBlob.type.includes('wav')) filename = 'voice_recording.wav';
         else if (audioBlob.type.includes('mp4') || audioBlob.type.includes('m4a')) filename = 'voice_recording.m4a';
         else if (audioBlob.type.includes('ogg')) filename = 'voice_recording.ogg';
 
@@ -144,6 +145,7 @@ export const App: React.FC = () => {
         onMicClick={handleMicClick}
         onTranscriptReady={handleTranscriptReady}
         isListening={isListening}
+        language={language}
       />
 
       {/* 🌟 3. Floating Organic Answer Card (Appears dynamically in open space) */}

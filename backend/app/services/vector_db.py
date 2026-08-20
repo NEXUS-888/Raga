@@ -12,16 +12,18 @@ from app.chunking.sliding_chunker import SlidingWindowChunker
 from app.chunking.metadata_chunker import MetadataAwareChunker
 from app.core.dataset_loader import dataset_manager, Document
 
+STOP_WORDS = {"what", "is", "are", "the", "a", "an", "and", "or", "in", "on", "at", "to", "for", "of", "with", "how", "who", "which", "where", "when", "why", "about", "tell", "me"}
+
 class FastEmbeddingEngine:
     """
     High-throughput, ultra-low-latency embedding engine optimized for <5ms embedding generation.
-    Uses subword character-gram TF-IDF projection with unit L2-normalization.
+    Uses word n-gram TF-IDF projection with unit L2-normalization and fixed dimension padding.
     """
     def __init__(self, dimension: int = 128):
         self.dimension = dimension
         self.vectorizer = TfidfVectorizer(
-            analyzer="char_wb",
-            ngram_range=(3, 5),
+            analyzer="word",
+            ngram_range=(1, 2),
             max_features=dimension,
             sublinear_tf=True
         )
@@ -41,16 +43,24 @@ class FastEmbeddingEngine:
             vec = rng.randn(self.dimension)
             return vec / (np.linalg.norm(vec) + 1e-9)
         
-        vec = self.vectorizer.transform([text]).toarray()[0]
-        norm = np.linalg.norm(vec)
+        raw_vec = self.vectorizer.transform([text]).toarray()[0]
+        if len(raw_vec) < self.dimension:
+            padded = np.zeros(self.dimension)
+            padded[:len(raw_vec)] = raw_vec
+            raw_vec = padded
+        norm = np.linalg.norm(raw_vec)
         if norm > 1e-9:
-            return vec / norm
-        return vec
+            return raw_vec / norm
+        return raw_vec
 
     def embed_batch(self, texts: List[str]) -> np.ndarray:
         if not self._is_fitted or not texts:
             return np.array([self.embed(t) for t in texts])
         mat = self.vectorizer.transform(texts).toarray()
+        if mat.shape[1] < self.dimension:
+            padded = np.zeros((mat.shape[0], self.dimension))
+            padded[:, :mat.shape[1]] = mat
+            mat = padded
         norms = np.linalg.norm(mat, axis=1, keepdims=True)
         norms[norms < 1e-9] = 1.0
         return mat / norms
@@ -96,8 +106,11 @@ class HybridVectorDB:
         self.embedding_engine.fit(chunk_texts)
         self.chunk_embeddings = self.embedding_engine.embed_batch(chunk_texts)
 
-        # Initialize BM25 index for sparse search
-        self.tokenized_corpus = [c.lower().split() for c in chunk_texts]
+        # Initialize BM25 index for sparse search with stopword filtering
+        self.tokenized_corpus = [
+            [w.strip("?,!.") for w in c.lower().split() if w.strip("?,!.") not in STOP_WORDS and len(w) > 1]
+            for c in chunk_texts
+        ]
         if self.tokenized_corpus:
             self.bm25 = BM25Okapi(self.tokenized_corpus)
         else:
@@ -131,7 +144,10 @@ class HybridVectorDB:
 
         # 2. Sparse BM25 Search
         t_bm25_0 = time.perf_counter()
-        tokenized_query = query.lower().split()
+        tokenized_query = [w.strip("?,!.") for w in query.lower().split() if w.strip("?,!.") not in STOP_WORDS and len(w) > 1]
+        if not tokenized_query:
+            tokenized_query = query.lower().split()
+            
         if self.bm25 and tokenized_query:
             bm25_scores = np.array(self.bm25.get_scores(tokenized_query))
             sparse_ranking = np.argsort(bm25_scores)[::-1]

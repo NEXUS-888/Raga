@@ -1,5 +1,7 @@
 import time
 import base64
+import json
+from pathlib import Path
 from typing import List, Optional
 from app.harness.structured_types import (
     VoiceRAGRequest,
@@ -13,6 +15,8 @@ from app.services.vector_db import vector_db
 from app.services.llm_service import llm_service
 from app.guardrails.manager import guardrail_manager
 from app.core.config import settings
+
+
 
 class PipelineOrchestrator:
     """
@@ -29,11 +33,12 @@ class PipelineOrchestrator:
         trace: List[HarnessTraceStep] = []
         waterfall = LatencyWaterfall()
 
-        # Step 1: Speech-to-Text via Sarvam or ElevenLabs
+        # Step 1: Speech-to-Text via Groq Whisper or Sarvam AI
         stt_t0 = time.perf_counter()
+        transcript = ""
+        stt_meta: dict = {}
         try:
-            transcript, stt_ms, stt_meta = await self.circuit_breaker.call(
-                stt_service.transcribe,
+            transcript, stt_ms, stt_meta = await stt_service.transcribe(
                 audio_bytes=audio_bytes,
                 provider=req.stt_provider,
                 language_code="hi-IN" if "hi" in req.language else "en-IN",
@@ -169,7 +174,8 @@ class PipelineOrchestrator:
                 llm_service.generate_rag_answer,
                 query=query,
                 retrieved_chunks=chunks,
-                is_general_knowledge=is_general
+                is_general_knowledge=is_general,
+                provider=req.llm_provider
             )
             gen_elapsed = (time.perf_counter() - gen_t0) * 1000
             waterfall.generation_ms = round(gen_elapsed, 2)

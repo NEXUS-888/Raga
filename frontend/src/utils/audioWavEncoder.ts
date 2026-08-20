@@ -43,6 +43,37 @@ export function pcmToWavBlob(samples: Float32Array, sampleRate: number = 16000):
   return new Blob([view], { type: 'audio/wav' });
 }
 
+/**
+ * Merges multiple Float32Array PCM chunks into a single contiguous Float32Array.
+ */
+export function mergePcmChunks(chunks: Float32Array[]): Float32Array {
+  let totalLen = 0;
+  for (let i = 0; i < chunks.length; i++) {
+    totalLen += chunks[i].length;
+  }
+  const result = new Float32Array(totalLen);
+  let offset = 0;
+  for (let i = 0; i < chunks.length; i++) {
+    result.set(chunks[i], offset);
+    offset += chunks[i].length;
+  }
+  return result;
+}
+
+/**
+ * Resamples PCM Float32Array from source rate (e.g., 44.1k/48k) to target rate (16kHz).
+ */
+export function resamplePcm(samples: Float32Array, fromRate: number, toRate: number = 16000): Float32Array {
+  if (fromRate === toRate || samples.length === 0) return samples;
+  const ratio = fromRate / toRate;
+  const newLength = Math.round(samples.length / ratio);
+  const resampled = new Float32Array(newLength);
+  for (let i = 0; i < newLength; i++) {
+    resampled[i] = samples[Math.min(Math.floor(i * ratio), samples.length - 1)];
+  }
+  return resampled;
+}
+
 function writeString(view: DataView, offset: number, string: string) {
   for (let i = 0; i < string.length; i++) {
     view.setUint8(offset + i, string.charCodeAt(i));
