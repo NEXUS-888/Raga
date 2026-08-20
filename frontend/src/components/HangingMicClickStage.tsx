@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, MoveDown, Square, Volume2, Mic, ArrowRight } from 'lucide-react';
-import { pcmToWavBlob } from '../utils/audioWavEncoder';
 
 interface HangingMicClickStageProps {
   isRevealed: boolean;
@@ -23,8 +22,8 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
   const recognitionRef = useRef<any>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const scriptNodeRef = useRef<ScriptProcessorNode | null>(null);
-  const pcmChunksRef = useRef<Float32Array[]>([]);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   const animFrameRef = useRef<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const wasListeningRef = useRef<boolean>(false);
@@ -88,10 +87,10 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
     }
   }, [isListening]);
 
-  // Real-time Microphone Audio Capture with direct 16kHz PCM Buffer & Analyser
+  // Real-time Microphone Audio Capture with MediaRecorder + AudioContext Analyser
   const startLiveAudioStream = async () => {
     try {
-      pcmChunksRef.current = [];
+      audioChunksRef.current = [];
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -101,9 +100,34 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
       });
       streamRef.current = stream;
 
+      // 1. Hardware MediaRecorder (guaranteed audio packet capture)
+      try {
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus'
+          : MediaRecorder.isTypeSupported('audio/webm')
+          ? 'audio/webm'
+          : MediaRecorder.isTypeSupported('audio/mp4')
+          ? 'audio/mp4'
+          : '';
+        const mr = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+        mr.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) {
+            audioChunksRef.current.push(e.data);
+          }
+        };
+        mr.start(100);
+        mediaRecorderRef.current = mr;
+      } catch (mrErr) {
+        console.warn("MediaRecorder init notice:", mrErr);
+      }
+
+      // 2. AudioContext for Real-Time VU Equalizer & Sound Wave Aura
       const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
       if (AudioCtxClass) {
-        const audioCtx = new AudioCtxClass({ sampleRate: 16000 });
+        const audioCtx = new AudioCtxClass();
+        if (audioCtx.state === 'suspended') {
+          await audioCtx.resume();
+        }
         const analyser = audioCtx.createAnalyser();
         analyser.fftSize = 64;
         analyser.smoothingTimeConstant = 0.35;
@@ -111,19 +135,8 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
         const source = audioCtx.createMediaStreamSource(stream);
         source.connect(analyser);
 
-        // ScriptProcessor to capture raw PCM float32 samples directly
-        const scriptNode = audioCtx.createScriptProcessor(4096, 1, 1);
-        scriptNode.onaudioprocess = (e) => {
-          const inputData = e.inputBuffer.getChannelData(0);
-          // Copy buffer
-          pcmChunksRef.current.push(new Float32Array(inputData));
-        };
-        source.connect(scriptNode);
-        scriptNode.connect(audioCtx.destination);
-
         audioCtxRef.current = audioCtx;
         analyserRef.current = analyser;
-        scriptNodeRef.current = scriptNode;
 
         trackMicrophoneVolume();
       }
@@ -159,47 +172,44 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
   const stopLiveAudioStream = () => {
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
 
-    // Merge PCM chunks into one Float32Array
-    let totalLength = 0;
-    for (const chunk of pcmChunksRef.current) {
-      totalLength += chunk.length;
-    }
-    const mergedPcm = new Float32Array(totalLength);
-    let offset = 0;
-    for (const chunk of pcmChunksRef.current) {
-      mergedPcm.set(chunk, offset);
-      offset += chunk.length;
-    }
+    const mr = mediaRecorderRef.current;
+    let recordedBlob: Blob | undefined;
 
-    // Convert raw PCM to a standardized 16kHz WAV Blob
-    let wavBlob: Blob | undefined;
-    if (totalLength > 1600) {
-      // More than 100ms of audio recorded
-      wavBlob = pcmToWavBlob(mergedPcm, 16000);
-    }
+    const finalizeAndSend = () => {
+      if (audioChunksRef.current.length > 0) {
+        const mimeType = mr?.mimeType || 'audio/webm';
+        recordedBlob = new Blob(audioChunksRef.current, { type: mimeType });
+      }
 
-    if (scriptNodeRef.current) {
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        try {
+          audioCtxRef.current.close();
+        } catch (e) {}
+        audioCtxRef.current = null;
+      }
+
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
+
+      const finalTranscript = (transcriptRef.current || liveTranscript).trim();
+      onTranscriptReady(finalTranscript, recordedBlob);
+      setVolumeLevel(0);
+    };
+
+    if (mr && mr.state !== 'inactive') {
+      mr.onstop = () => {
+        finalizeAndSend();
+      };
       try {
-        scriptNodeRef.current.disconnect();
-      } catch (e) {}
-      scriptNodeRef.current = null;
+        mr.stop();
+      } catch (e) {
+        finalizeAndSend();
+      }
+    } else {
+      finalizeAndSend();
     }
-
-    if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
-      try {
-        audioCtxRef.current.close();
-      } catch (e) {}
-      audioCtxRef.current = null;
-    }
-
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-
-    const finalTranscript = (transcriptRef.current || liveTranscript).trim();
-    onTranscriptReady(finalTranscript, wavBlob);
-    setVolumeLevel(0);
   };
 
   // Mic anchor coordinates
