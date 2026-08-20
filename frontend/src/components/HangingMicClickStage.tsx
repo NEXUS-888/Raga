@@ -247,8 +247,8 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
       {/* 1. TOP CEILING MOUNT DISH (Exact Reference Cutout)        */}
       {/* ======================================================== */}
       <div
-        style={{ right: `${mountRight - 78}px`, top: 0 }}
-        className="absolute w-40 h-11 pointer-events-auto flex items-center justify-center filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.5)]"
+        style={{ right: `${mountRight - 65}px`, top: 0, width: '130px', height: '36px' }}
+        className="absolute z-10 pointer-events-auto flex items-center justify-center filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)]"
       >
         <img
           src="/assets/vintage_ceiling_mount.png"
@@ -264,15 +264,15 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
       <div
         style={{
           right: `${mountRight - 5}px`,
-          top: '36px',
-          height: `${Math.max(0, currentMicY - 30)}px`,
-          width: '12px',
+          top: '30px',
+          height: `${Math.max(0, currentMicY - 24)}px`,
+          width: '10px',
           backgroundImage: "url('/assets/vintage_cable_tile.png')",
           backgroundRepeat: 'repeat-y',
-          backgroundSize: '12px auto',
+          backgroundSize: '10px auto',
           backgroundPosition: 'center top',
         }}
-        className="absolute pointer-events-none filter drop-shadow-[4px_4px_0px_rgba(0,0,0,0.7)]"
+        className="absolute z-0 pointer-events-none filter drop-shadow-[3px_3px_0px_rgba(0,0,0,0.8)]"
       />
 
       {/* ======================================================== */}
@@ -281,10 +281,10 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
       {isListening && (
         <div
           style={{
-            right: `${mountRight + 130}px`,
+            right: `${mountRight + 110}px`,
             top: `${currentMicY - 30}px`,
           }}
-          className="absolute pointer-events-auto w-84 p-5 bg-[#FFFDF8] text-slate-900 border-3 border-black rounded-3xl shadow-[8px_8px_0px_#000] animate-slide-up"
+          className="absolute pointer-events-auto w-80 p-5 bg-[#FFFDF8] text-slate-900 border-3 border-black rounded-3xl shadow-[8px_8px_0px_#000] animate-slide-up z-30"
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b-2 border-black pb-2 mb-2.5">
@@ -365,7 +365,7 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
       {/* ======================================================== */}
       <div
         style={{
-          right: `${mountRight - 80}px`,
+          right: `${mountRight - 67}px`,
           top: `${currentMicY}px`,
           transition: isDragging ? 'none' : 'top 400ms cubic-bezier(0.34, 1.56, 0.64, 1)',
         }}
@@ -373,7 +373,7 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        className="absolute pointer-events-auto flex flex-col items-center cursor-grab active:cursor-grabbing group touch-none"
+        className="absolute z-20 pointer-events-auto flex flex-col items-center cursor-grab active:cursor-grabbing group touch-none"
       >
         {/* Pulsing Helper Prompt in Initial Pitch Black state */}
         {!isRevealed && !isListening && (
