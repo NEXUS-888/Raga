@@ -24,7 +24,7 @@ export const FloatingOrganicAnswer: React.FC<FloatingOrganicAnswerProps> = ({
             <Sparkles className="w-4 h-4 fill-current text-black" />
           </div>
           <span className="text-xs font-black uppercase text-slate-950 font-display tracking-wide">
-            {response.is_refusal ? "Question Refused" : "Grounded Goa Answer"}
+            {response.query.includes("No speech") ? "Voice Prompt" : response.is_refusal ? "Question Refused" : "Grounded Goa Answer"}
           </span>
         </div>
 

@@ -54,11 +54,20 @@ export const App: React.FC = () => {
 
     // Priority 2: If SpeechRecognition was quiet but audio was recorded, send audio to Groq Whisper backend
     if (audioBlob && audioBlob.size > 500) {
+      if (!isRevealed) {
+        setIsRevealed(true);
+        setGlimmerTrigger((prev) => prev + 1);
+      }
       setIsLoading(true);
+      setErrorMsg(null);
       try {
         const formData = new FormData();
-        const ext = audioBlob.type.includes('mp4') ? 'mp4' : 'webm';
-        formData.append('file', audioBlob, `voice_recording.${ext}`);
+        let filename = 'voice_recording.wav';
+        if (audioBlob.type.includes('webm')) filename = 'voice_recording.webm';
+        else if (audioBlob.type.includes('mp4') || audioBlob.type.includes('m4a')) filename = 'voice_recording.m4a';
+        else if (audioBlob.type.includes('ogg')) filename = 'voice_recording.ogg';
+
+        formData.append('file', audioBlob, filename);
         formData.append('chunking_strategy', chunkingStrategy);
         formData.append('stt_provider', 'groq');
         formData.append('language', language);

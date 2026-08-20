@@ -86,24 +86,38 @@ class SpeechToTextService:
         headers = {
             "Authorization": f"Bearer {settings.groq_api_key}"
         }
-        ext = "webm"
-        content_type = "audio/webm"
-        if filename:
+        
+        # Auto-detect true audio container from magic bytes
+        ext = "wav"
+        content_type = "audio/wav"
+        if audio_bytes[:4] == b"RIFF":
+            ext = "wav"
+            content_type = "audio/wav"
+        elif audio_bytes[:4] == b"\x1aE\xdf\xa3":
+            ext = "webm"
+            content_type = "audio/webm"
+        elif len(audio_bytes) > 8 and audio_bytes[4:8] == b"ftyp":
+            ext = "m4a"
+            content_type = "audio/mp4"
+        elif audio_bytes[:4] == b"OggS":
+            ext = "ogg"
+            content_type = "audio/ogg"
+        elif filename:
             if filename.endswith(".wav"):
                 ext = "wav"
                 content_type = "audio/wav"
+            elif filename.endswith(".webm"):
+                ext = "webm"
+                content_type = "audio/webm"
             elif filename.endswith(".mp3"):
                 ext = "mp3"
                 content_type = "audio/mpeg"
             elif filename.endswith(".mp4") or filename.endswith(".m4a"):
                 ext = "m4a"
                 content_type = "audio/mp4"
-            elif filename.endswith(".ogg"):
-                ext = "ogg"
-                content_type = "audio/ogg"
 
         files = {
-            "file": (filename or f"recording.{ext}", audio_bytes, content_type)
+            "file": (f"recording.{ext}", audio_bytes, content_type)
         }
         data = {
             "model": "whisper-large-v3-turbo",
