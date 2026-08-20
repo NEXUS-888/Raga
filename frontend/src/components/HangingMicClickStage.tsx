@@ -244,93 +244,36 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
   return (
     <div className="fixed inset-0 pointer-events-none z-30 select-none overflow-visible">
       {/* ======================================================== */}
-      {/* 1. TOP CEILING MOUNT FLANGE / PURPLE DISH (Exact Reference) */}
+      {/* 1. TOP CEILING MOUNT DISH (Exact Reference Cutout)        */}
       {/* ======================================================== */}
       <div
-        style={{ right: `${mountRight - 55}px`, top: -10 }}
-        className="absolute w-28 h-14 pointer-events-auto flex flex-col items-center"
+        style={{ right: `${mountRight - 78}px`, top: 0 }}
+        className="absolute w-40 h-11 pointer-events-auto flex items-center justify-center filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.5)]"
       >
-        <svg viewBox="0 0 120 60" className="w-full h-full overflow-visible">
-          <defs>
-            <linearGradient id="ceilingFlangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#6B21A8" />
-              <stop offset="50%" stopColor="#4C1D95" />
-              <stop offset="100%" stopColor="#2E1065" />
-            </linearGradient>
-            <linearGradient id="ceilingRimGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#9333EA" />
-              <stop offset="100%" stopColor="#4A0E6B" />
-            </linearGradient>
-          </defs>
-          {/* Ceiling Dome Dish */}
-          <path
-            d="M 10 10 C 10 10, 60 -10, 110 10 L 100 34 C 100 34, 60 46, 20 34 Z"
-            fill="url(#ceilingFlangeGrad)"
-            stroke="#0F0F1A"
-            strokeWidth="3.5"
-          />
-          {/* Lower Lip Rim */}
-          <ellipse cx="60" cy="34" rx="42" ry="12" fill="url(#ceilingRimGrad)" stroke="#0F0F1A" strokeWidth="3.5" />
-          <ellipse cx="60" cy="34" rx="28" ry="8" fill="#1E0B38" stroke="#0F0F1A" strokeWidth="2.5" />
-          {/* Hanging Socket Collar */}
-          <path
-            d="M 50 36 L 50 48 C 50 54, 70 54, 70 48 L 70 36 Z"
-            fill="url(#ceilingFlangeGrad)"
-            stroke="#0F0F1A"
-            strokeWidth="3"
-          />
-        </svg>
+        <img
+          src="/assets/vintage_ceiling_mount.png"
+          alt="Ceiling Mount"
+          className="w-full h-full object-contain pointer-events-none"
+          draggable={false}
+        />
       </div>
 
       {/* ======================================================== */}
-      {/* 2. DYNAMIC STRETCHING BRAIDED PURPLE CABLE (Elastic SVG)  */}
+      {/* 2. DYNAMIC STRETCHING BRAIDED CABLE (Exact Reference Tile) */}
       {/* ======================================================== */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none">
-        <defs>
-          {/* Repeating Braided / Herringbone Pattern */}
-          <pattern id="braidedPattern" width="12" height="14" patternUnits="userSpaceOnUse">
-            <rect width="12" height="14" fill="#581C87" />
-            {/* Cross Weave Chevrons */}
-            <path d="M 0 0 L 6 7 L 12 0" stroke="#7E22CE" strokeWidth="2" fill="none" />
-            <path d="M 0 7 L 6 14 L 12 7" stroke="#9333EA" strokeWidth="2" fill="none" />
-            <path d="M 6 0 L 12 7 L 6 14" stroke="#3B0764" strokeWidth="1.5" fill="none" />
-            <line x1="6" y1="0" x2="6" y2="14" stroke="#1E0B38" strokeWidth="1" strokeDasharray="1,2" />
-          </pattern>
-        </defs>
-
-        {/* Cable Shadow */}
-        <line
-          x1={window.innerWidth - mountRight + 4}
-          y1={38}
-          x2={window.innerWidth - mountRight + 4}
-          y2={currentMicY + 4}
-          stroke="rgba(0,0,0,0.4)"
-          strokeWidth="10"
-          strokeLinecap="round"
-        />
-
-        {/* Outer Cable Outline */}
-        <line
-          x1={window.innerWidth - mountRight}
-          y1={36}
-          x2={window.innerWidth - mountRight}
-          y2={currentMicY + 3}
-          stroke="#0F0F1A"
-          strokeWidth="11"
-          strokeLinecap="round"
-        />
-
-        {/* Inner Braided Purple Cable Core */}
-        <line
-          x1={window.innerWidth - mountRight}
-          y1={37}
-          x2={window.innerWidth - mountRight}
-          y2={currentMicY + 2}
-          stroke="url(#braidedPattern)"
-          strokeWidth="8"
-          strokeLinecap="round"
-        />
-      </svg>
+      <div
+        style={{
+          right: `${mountRight - 5}px`,
+          top: '36px',
+          height: `${Math.max(0, currentMicY - 30)}px`,
+          width: '12px',
+          backgroundImage: "url('/assets/vintage_cable_tile.png')",
+          backgroundRepeat: 'repeat-y',
+          backgroundSize: '12px auto',
+          backgroundPosition: 'center top',
+        }}
+        className="absolute pointer-events-none filter drop-shadow-[4px_4px_0px_rgba(0,0,0,0.7)]"
+      />
 
       {/* ======================================================== */}
       {/* 3. LIVE SPEECH BALLOON & AUDIO VU EQUALIZER              */}
