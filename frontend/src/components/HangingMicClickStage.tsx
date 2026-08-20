@@ -265,7 +265,7 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
         style={{
           right: `${mountRight - 5}px`,
           top: '30px',
-          height: `${Math.max(0, currentMicY - 24)}px`,
+          height: `${Math.max(0, currentMicY - 18)}px`,
           width: '10px',
           backgroundImage: "url('/assets/vintage_cable_tile.png')",
           backgroundRepeat: 'repeat-y',
@@ -391,8 +391,11 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
           </div>
         )}
 
-        {/* Vector Illustrated Retro Yellow & Purple Microphone */}
-        <div className="group-hover:scale-105 group-active:scale-95 transition-transform duration-150">
+        {/* Vector Illustrated Retro Yellow & Purple Microphone (Anchored at Top Collar) */}
+        <div
+          className="group-hover:scale-105 group-active:scale-95 transition-transform duration-150"
+          style={{ transformOrigin: '49% 0px' }}
+        >
           <GraffitiMicVector isListening={isListening} volumeLevel={volumeLevel} />
         </div>
       </div>
