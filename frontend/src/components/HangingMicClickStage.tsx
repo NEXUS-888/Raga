@@ -205,44 +205,141 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
 
   // Mic anchor coordinates
   const mountRight = 240;
-  const micY = isListening ? 190 : 85;
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragY, setDragY] = useState(0);
+  const startYRef = useRef(0);
+
+  // Handle Drag Pulling
+  const handlePointerDown = (e: React.PointerEvent) => {
+    setIsDragging(true);
+    startYRef.current = e.clientY;
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging) return;
+    const delta = e.clientY - startYRef.current;
+    // Allow pulling down between 0 and 160px
+    setDragY(Math.max(0, Math.min(160, delta)));
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    try {
+      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch (err) {}
+
+    if (dragY > 35) {
+      // User pulled down significantly -> toggle mic listening
+      onMicClick();
+    }
+    setDragY(0);
+  };
+
+  // Base Y + Drag Y
+  const baseMicY = isListening ? 190 : 75;
+  const currentMicY = isDragging ? (isListening ? 190 : 75) + dragY : baseMicY;
 
   return (
     <div className="fixed inset-0 pointer-events-none z-30 select-none overflow-visible">
-      {/* Ceiling Mount Bracket */}
+      {/* ======================================================== */}
+      {/* 1. TOP CEILING MOUNT FLANGE / PURPLE DISH (Exact Reference) */}
+      {/* ======================================================== */}
       <div
-        style={{ right: `${mountRight - 30}px`, top: 0 }}
-        className="absolute w-16 h-5 bg-black border-x-2 border-b-2 border-[#FFE500] rounded-b-lg shadow-[3px_3px_0px_#000] flex items-center justify-center pointer-events-auto"
+        style={{ right: `${mountRight - 55}px`, top: -10 }}
+        className="absolute w-28 h-14 pointer-events-auto flex flex-col items-center"
       >
-        <div className="w-2.5 h-2.5 rounded-full bg-[#FF2A55] border border-black animate-pulse" />
+        <svg viewBox="0 0 120 60" className="w-full h-full overflow-visible">
+          <defs>
+            <linearGradient id="ceilingFlangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#6B21A8" />
+              <stop offset="50%" stopColor="#4C1D95" />
+              <stop offset="100%" stopColor="#2E1065" />
+            </linearGradient>
+            <linearGradient id="ceilingRimGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#9333EA" />
+              <stop offset="100%" stopColor="#4A0E6B" />
+            </linearGradient>
+          </defs>
+          {/* Ceiling Dome Dish */}
+          <path
+            d="M 10 10 C 10 10, 60 -10, 110 10 L 100 34 C 100 34, 60 46, 20 34 Z"
+            fill="url(#ceilingFlangeGrad)"
+            stroke="#0F0F1A"
+            strokeWidth="3.5"
+          />
+          {/* Lower Lip Rim */}
+          <ellipse cx="60" cy="34" rx="42" ry="12" fill="url(#ceilingRimGrad)" stroke="#0F0F1A" strokeWidth="3.5" />
+          <ellipse cx="60" cy="34" rx="28" ry="8" fill="#1E0B38" stroke="#0F0F1A" strokeWidth="2.5" />
+          {/* Hanging Socket Collar */}
+          <path
+            d="M 50 36 L 50 48 C 50 54, 70 54, 70 48 L 70 36 Z"
+            fill="url(#ceilingFlangeGrad)"
+            stroke="#0F0F1A"
+            strokeWidth="3"
+          />
+        </svg>
       </div>
 
-      {/* Flexible Coiled Cable SVG */}
+      {/* ======================================================== */}
+      {/* 2. DYNAMIC STRETCHING BRAIDED PURPLE CABLE (Elastic SVG)  */}
+      {/* ======================================================== */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none">
         <defs>
-          <linearGradient id="graffitiCable" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#000000" />
-            <stop offset="50%" stopColor="#FF2A55" />
-            <stop offset="100%" stopColor="#FFE500" />
-          </linearGradient>
+          {/* Repeating Braided / Herringbone Pattern */}
+          <pattern id="braidedPattern" width="12" height="14" patternUnits="userSpaceOnUse">
+            <rect width="12" height="14" fill="#581C87" />
+            {/* Cross Weave Chevrons */}
+            <path d="M 0 0 L 6 7 L 12 0" stroke="#7E22CE" strokeWidth="2" fill="none" />
+            <path d="M 0 7 L 6 14 L 12 7" stroke="#9333EA" strokeWidth="2" fill="none" />
+            <path d="M 6 0 L 12 7 L 6 14" stroke="#3B0764" strokeWidth="1.5" fill="none" />
+            <line x1="6" y1="0" x2="6" y2="14" stroke="#1E0B38" strokeWidth="1" strokeDasharray="1,2" />
+          </pattern>
         </defs>
-        <path
-          d={`M ${window.innerWidth - mountRight} 0 Q ${window.innerWidth - mountRight + 20} ${micY * 0.45} ${
-            window.innerWidth - mountRight
-          } ${micY - 25}`}
-          stroke="url(#graffitiCable)"
-          strokeWidth="6"
-          fill="none"
+
+        {/* Cable Shadow */}
+        <line
+          x1={window.innerWidth - mountRight + 4}
+          y1={38}
+          x2={window.innerWidth - mountRight + 4}
+          y2={currentMicY + 4}
+          stroke="rgba(0,0,0,0.4)"
+          strokeWidth="10"
+          strokeLinecap="round"
+        />
+
+        {/* Outer Cable Outline */}
+        <line
+          x1={window.innerWidth - mountRight}
+          y1={36}
+          x2={window.innerWidth - mountRight}
+          y2={currentMicY + 3}
+          stroke="#0F0F1A"
+          strokeWidth="11"
+          strokeLinecap="round"
+        />
+
+        {/* Inner Braided Purple Cable Core */}
+        <line
+          x1={window.innerWidth - mountRight}
+          y1={37}
+          x2={window.innerWidth - mountRight}
+          y2={currentMicY + 2}
+          stroke="url(#braidedPattern)"
+          strokeWidth="8"
           strokeLinecap="round"
         />
       </svg>
 
-      {/* Live Graffiti Speech Balloon & Audio VU Bar (Appears when Mic drops) */}
+      {/* ======================================================== */}
+      {/* 3. LIVE SPEECH BALLOON & AUDIO VU EQUALIZER              */}
+      {/* ======================================================== */}
       {isListening && (
         <div
           style={{
-            right: `${mountRight + 120}px`,
-            top: `${micY - 30}px`,
+            right: `${mountRight + 130}px`,
+            top: `${currentMicY - 30}px`,
           }}
           className="absolute pointer-events-auto w-84 p-5 bg-[#FFFDF8] text-slate-900 border-3 border-black rounded-3xl shadow-[8px_8px_0px_#000] animate-slide-up"
         >
@@ -277,7 +374,7 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
             </p>
           </div>
 
-          {/* Real-time Graffiti Audio Equalizer Meter */}
+          {/* Real-time Audio VU Meter */}
           <div className="mt-3 pt-2.5 border-t-2 border-black flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Volume2 className={`w-4 h-4 ${volumeLevel > 0.04 ? 'text-[#FF2A55] animate-bounce' : 'text-slate-400'}`} />
@@ -320,33 +417,39 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
         </div>
       )}
 
-      {/* Hanging Graffiti Microphone Unit (Clickable) */}
+      {/* ======================================================== */}
+      {/* 4. HANGING RETRO STUDIO MICROPHONE (Click or Pull/Drag)   */}
+      {/* ======================================================== */}
       <div
         style={{
-          right: `${mountRight - 70}px`,
-          top: `${micY}px`,
-          transition: 'top 350ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+          right: `${mountRight - 80}px`,
+          top: `${currentMicY}px`,
+          transition: isDragging ? 'none' : 'top 400ms cubic-bezier(0.34, 1.56, 0.64, 1)',
         }}
         onClick={onMicClick}
-        className="absolute pointer-events-auto flex flex-col items-center cursor-pointer group"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        className="absolute pointer-events-auto flex flex-col items-center cursor-grab active:cursor-grabbing group touch-none"
       >
         {/* Pulsing Helper Prompt in Initial Pitch Black state */}
         {!isRevealed && !isListening && (
           <div className="absolute -top-12 px-4 py-1.5 bg-[#FFE500] text-black font-black text-xs border-2 border-black rounded-full shadow-[4px_4px_0px_#000] whitespace-nowrap flex items-center space-x-1.5 animate-bounce font-display">
             <Sparkles className="w-3.5 h-3.5 fill-current text-black" />
-            <span>CLICK MIC TO ENTER GOA</span>
+            <span>PULL OR CLICK MIC TO ENTER GOA</span>
             <MoveDown className="w-3.5 h-3.5 stroke-[3]" />
           </div>
         )}
 
         {isRevealed && !isListening && (
           <div className="absolute -top-10 px-3.5 py-1 bg-[#00F5D4] text-black font-black text-[11px] border-2 border-black rounded-full shadow-[3px_3px_0px_#000] whitespace-nowrap flex items-center space-x-1 font-display">
-            <span>CLICK MIC TO SPEAK</span>
+            <span>PULL DOWN TO SPEAK</span>
+            <MoveDown className="w-3 h-3 stroke-[2.5]" />
           </div>
         )}
 
-        {/* Vector Illustrated Graffiti Street-Art Studio Microphone */}
-        <div className="group-hover:scale-105 transition-transform">
+        {/* Vector Illustrated Retro Yellow & Purple Microphone */}
+        <div className="group-hover:scale-105 group-active:scale-95 transition-transform duration-150">
           <GraffitiMicVector isListening={isListening} volumeLevel={volumeLevel} />
         </div>
       </div>
