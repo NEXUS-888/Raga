@@ -265,12 +265,13 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
         style={{
           right: `${mountRight - 5}px`,
           top: '32px',
-          height: `${Math.max(0, currentMicY - 30)}px`,
+          height: `${Math.max(0, currentMicY - 26)}px`,
           width: '10px',
           backgroundImage: "url('/assets/vintage_cable_tile.png')",
           backgroundRepeat: 'repeat-y',
           backgroundSize: '10px auto',
           backgroundPosition: 'center top',
+          transition: isDragging ? 'none' : 'height 400ms cubic-bezier(0.34, 1.56, 0.64, 1)',
         }}
         className="absolute z-10 pointer-events-none filter drop-shadow-[2px_2px_0px_rgba(0,0,0,0.8)]"
       />
@@ -393,9 +394,24 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
 
         {/* Vector Illustrated Retro Yellow & Purple Microphone (Anchored at Top Collar) */}
         <div
-          className="group-hover:scale-105 group-active:scale-95 transition-transform duration-150"
+          className="relative group-hover:scale-105 group-active:scale-95 transition-transform duration-150"
           style={{ transformOrigin: '49% 0px' }}
         >
+          {/* Integrated Cable Tail (extends upwards from the collar for 100% unbreakable connection) */}
+          <div
+            style={{
+              left: 'calc(49% - 5px)',
+              top: '-16px',
+              width: '10px',
+              height: '20px',
+              backgroundImage: "url('/assets/vintage_cable_tile.png')",
+              backgroundRepeat: 'repeat-y',
+              backgroundSize: '10px auto',
+              backgroundPosition: 'center top',
+              zIndex: -1,
+            }}
+            className="absolute pointer-events-none"
+          />
           <GraffitiMicVector isListening={isListening} volumeLevel={volumeLevel} />
         </div>
       </div>
