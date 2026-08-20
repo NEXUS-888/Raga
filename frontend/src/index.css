@@ -1,0 +1,190 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-base: #0A0D1A;
+    --bg-surface: #121629;
+    --bg-elevated: #1A1F38;
+    --memphis-red: #FF2A55;
+    --memphis-crimson: #E6194B;
+    --memphis-yellow: #FFE500;
+    --memphis-cream: #FFFDF8;
+    --memphis-blue: #3A86FF;
+    --memphis-teal: #00F5D4;
+    --memphis-purple: #7209B7;
+    --border-bold: #000000;
+    --border-light: rgba(255, 255, 255, 0.15);
+    --text-primary: #FFFDF8;
+    --text-secondary: #CBD5E1;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+}
+
+/* Custom Typography Utilities */
+.font-display {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+.font-mono-data {
+  font-family: 'Geist Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Corporate Memphis / Pop-Brutalist Card Panels (No 3D tilt, crisp flat surfaces with bold shadows) */
+.memphis-card {
+  background-color: var(--bg-surface);
+  border: 2px solid #000000;
+  border-radius: 1rem;
+  box-shadow: 5px 5px 0px #000000;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.memphis-card:hover {
+  box-shadow: 6px 6px 0px var(--memphis-red);
+}
+
+.memphis-card-red {
+  background-color: #FF2A55;
+  color: #000000;
+  border: 2px solid #000000;
+  border-radius: 1rem;
+  box-shadow: 5px 5px 0px #000000;
+}
+
+.memphis-card-cream {
+  background-color: #FFFDF8;
+  color: #0A0D1A;
+  border: 2px solid #000000;
+  border-radius: 1rem;
+  box-shadow: 5px 5px 0px #000000;
+}
+
+.memphis-card-yellow {
+  background-color: #FFE500;
+  color: #0A0D1A;
+  border: 2px solid #000000;
+  border-radius: 1rem;
+  box-shadow: 5px 5px 0px #000000;
+}
+
+/* Tactile Pop-Brutalist Memphis Buttons */
+.btn-memphis {
+  position: relative;
+  background-color: var(--memphis-yellow);
+  color: #000000;
+  font-weight: 700;
+  border: 2px solid #000000;
+  border-radius: 0.75rem;
+  box-shadow: 3px 3px 0px #000000;
+  transition: transform 60ms ease, box-shadow 60ms ease;
+  cursor: pointer;
+}
+
+.btn-memphis:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px #000000;
+}
+
+.btn-memphis:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #000000;
+}
+
+.btn-memphis-red {
+  background-color: #FF2A55;
+  color: #FFFFFF;
+  border: 2px solid #000000;
+  box-shadow: 3px 3px 0px #000000;
+}
+
+.btn-memphis-red:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px #000000;
+}
+
+.btn-memphis-red:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #000000;
+}
+
+.btn-memphis-teal {
+  background-color: #00F5D4;
+  color: #000000;
+  border: 2px solid #000000;
+  box-shadow: 3px 3px 0px #000000;
+}
+
+.btn-memphis-dark {
+  background-color: #1A1F38;
+  color: #FFFDF8;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 3px 3px 0px rgba(0, 0, 0, 0.8);
+}
+
+.btn-memphis-dark:hover {
+  border-color: #FF2A55;
+  box-shadow: 4px 4px 0px #FF2A55;
+}
+
+/* Graphic Sticker Badges */
+.sticker-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.65rem;
+  border: 2px solid #000000;
+  border-radius: 9999px;
+  font-weight: 800;
+  font-size: 0.75rem;
+  box-shadow: 2px 2px 0px #000000;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Header Bar */
+.memphis-header-bar {
+  background-color: #0A0D1A;
+  border-bottom: 2px solid #000000;
+  box-shadow: 0 4px 0px rgba(0, 0, 0, 0.5);
+}
+
+/* Low-Power Hardware-Accelerated Animations */
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUpFade 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #0A0D1A;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #FF2A55;
+  border-radius: 3px;
+  border: 1px solid #000;
+}

@@ -1,0 +1,327 @@
+import json
+import os
+from typing import List, Dict, Any, Optional
+from pydantic import BaseModel
+
+class Document(BaseModel):
+    doc_id: str
+    title: str
+    content: str
+    language: str
+    metadata: Dict[str, Any] = {}
+
+class BenchmarkQuery(BaseModel):
+    query_id: str
+    query_text: str
+    expected_doc_ids: List[str]
+    language: str
+    category: str  # e.g., "in_domain", "off_topic", "adversarial", "indic"
+
+# Curated seed dataset representing ai4bharat/MSMARCO-XI across domains & languages
+CURATED_MSMARCO_XI_DATA: List[Dict[str, Any]] = [
+    {
+        "doc_id": "msmarco_xi_101",
+        "title": "State of Goa: Geography, Capital and Culture",
+        "language": "en",
+        "content": """# TITLE: State of Goa: Geography, Capital and Culture
+# SECTION: Overview and Capital
+Goa is a state located on the southwestern coast of India within the Konkan region.
+The capital of Goa is Panaji (formerly Panjim), while Vasco da Gama is its largest city.
+The historic city of Margao still exhibits the cultural influence of the Portuguese, who first landed in the early 16th century as merchants and colonized it soon after.
+
+# SECTION: Languages and Administration
+The official language of Goa is Konkani written in the Devanagari script. Marathi is also widely used for official and educational purposes.
+English and Hindi are understood and spoken by the majority of the population, especially in tourism and administrative sectors.
+
+# SECTION: Climate and Tourism
+Goa features a tropical monsoon climate with hot and humid weather during the summer and heavy rainfall between June and September.
+It is renowned worldwide for its beaches, places of worship, and world heritage architecture.
+""",
+        "metadata": {"source": "ai4bharat/MSMARCO-XI", "domain": "geography", "split": "test"}
+    },
+    {
+        "doc_id": "msmarco_xi_102",
+        "title": "गोवा राज्य: भूगोल, राजधानी और भाषा",
+        "language": "hi",
+        "content": """# TITLE: गोवा राज्य का परिचय
+# SECTION: राजधानी और भूगोल
+गोवा भारत के दक्षिण-पश्चिमी तट पर स्थित एक सुंदर राज्य है।
+गोवा की प्रशासनिक राजधानी पणजी (Panaji) है, और वास्को द गामा इसका सबसे बड़ा शहर है।
+मडगांव (Margao) गोवा का एक ऐतिहासिक और सांस्कृतिक केंद्र है।
+
+# SECTION: आधिकारिक भाषा
+गोवा की आधिकारिक राजभाषा कोंकणी (Konkani) है जो देवनागरी लिपि में लिखी जाती है।
+मराठी भाषा का उपयोग भी व्यापक रूप से किया जाता है। अंग्रेजी और हिंदी भी पर्यटन और व्यवसाय में बोली जाती हैं।
+
+# SECTION: पर्यटन और मौसम
+गोवा अपने खूबसूरत समुद्र तटों (beaches) और पुर्तगाली वास्तुकला के लिए विश्व प्रसिद्ध है।
+यहाँ जून से सितंबर के दौरान भारी मानसूनी वर्षा होती है।
+""",
+        "metadata": {"source": "ai4bharat/MSMARCO-XI", "domain": "geography", "split": "test"}
+    },
+    {
+        "doc_id": "msmarco_xi_103",
+        "title": "Neural Retrieval and Vector Search Architecture",
+        "language": "en",
+        "content": """# TITLE: Neural Information Retrieval and Vector Search
+# SECTION: Dense Embeddings vs BM25
+Traditional lexical search algorithms like BM25 rely on exact keyword frequency and inverse document frequency.
+Neural Information Retrieval uses dense vector representations computed by transformer models to capture semantic meaning beyond keyword overlap.
+
+# SECTION: HNSW Indexing for Sub-10ms Retrieval
+Hierarchical Navigable Small World (HNSW) graphs allow nearest neighbor search in logarithmic time complexity.
+By organizing vectors in multi-layered proximity graphs, vector databases can retrieve top-K semantic matches in under 5 milliseconds.
+
+# SECTION: Hybrid Retrieval and Reciprocal Rank Fusion
+Hybrid search combines dense vector retrieval with BM25 sparse lexical matching using Reciprocal Rank Fusion (RRF).
+This ensures robust recall for both semantic conceptual queries and rare out-of-vocabulary domain terms.
+""",
+        "metadata": {"source": "ai4bharat/MSMARCO-XI", "domain": "computer_science", "split": "train"}
+    },
+    {
+        "doc_id": "msmarco_xi_104",
+        "title": "Retrieval-Augmented Generation (RAG) and Latency Optimization",
+        "language": "en",
+        "content": """# TITLE: Retrieval-Augmented Generation System Design
+# SECTION: Pipeline Lifecycle
+A modern Voice RAG pipeline involves: 1) Speech-to-Text conversion, 2) Query embedding & guardrail inspection, 3) Vector database chunk retrieval, and 4) LLM grounded answer synthesis.
+
+# SECTION: Latency Targets and TTFT
+In voice conversational systems, achieving sub-200ms latency is paramount to maintain human conversational cadence.
+Time to First Token (TTFT) can be reduced using speculative decoding, quantized vector embeddings, and high-throughput inference engines like Groq and Cerebras.
+
+# SECTION: Grounding and Hallucination Mitigation
+RAG models ground generation strictly on retrieved passage context.
+When context is insufficient or ungrounded, guardrail verifiers trigger structured abstention to prevent hallucinations.
+""",
+        "metadata": {"source": "ai4bharat/MSMARCO-XI", "domain": "computer_science", "split": "train"}
+    },
+    {
+        "doc_id": "msmarco_xi_105",
+        "title": "Sarvam AI Saaras and Speech-to-Text Technologies",
+        "language": "en",
+        "content": """# TITLE: Indic Speech-to-Text Models: Sarvam AI Saaras
+# SECTION: Multilingual Indic ASR
+Sarvam AI has developed Saaras, a state-of-the-art automatic speech recognition (ASR) model specifically optimized for 10+ Indian languages and code-mixed Indian English.
+It achieves high accuracy on Indian accents and handles vernacular phrasing with low transcription latency.
+
+# SECTION: ElevenLabs Voice Integration
+ElevenLabs provides high-accuracy speech-to-text (Scribe) and expressive voice synthesis with low streaming latency suitable for real-time interactive voice agents.
+""",
+        "metadata": {"source": "ai4bharat/MSMARCO-XI", "domain": "artificial_intelligence", "split": "train"}
+    },
+    {
+        "doc_id": "msmarco_xi_106",
+        "title": "Human Health: Vitamin D Deficiency and Symptoms",
+        "language": "en",
+        "content": """# TITLE: Clinical Overview of Vitamin D
+# SECTION: Biological Role and Synthesis
+Vitamin D is a fat-soluble vitamin essential for maintaining healthy bones and teeth by promoting calcium absorption in the gut.
+It is naturally synthesized in human skin upon exposure to solar ultraviolet B (UVB) radiation.
+
+# SECTION: Symptoms of Deficiency
+Common symptoms of vitamin D deficiency include bone pain, muscle weakness, frequent infections, fatigue, and impaired wound healing.
+Severe long-term deficiency can lead to osteomalacia in adults and rickets in children.
+""",
+        "metadata": {"source": "ai4bharat/MSMARCO-XI", "domain": "health", "split": "train"}
+    },
+    {
+        "doc_id": "msmarco_xi_107",
+        "title": "Photosynthesis and Plant Energy Conversion",
+        "language": "en",
+        "content": """# TITLE: Plant Physiology: Photosynthesis
+# SECTION: Light and Dark Reactions
+Photosynthesis is the biological process by which green plants, algae, and cyanobacteria convert sunlight, carbon dioxide, and water into glucose and oxygen.
+Chlorophyll pigments located within chloroplast thylakoids capture light energy to drive ATP and NADPH synthesis during light reactions.
+In the Calvin cycle, carbon fixation produces carbohydrate molecules essential for plant growth and the global food chain.
+""",
+        "metadata": {"source": "ai4bharat/MSMARCO-XI", "domain": "biology", "split": "train"}
+    },
+    {
+        "doc_id": "msmarco_xi_108",
+        "title": "भारत का मानसून और जलवायु प्रणाली",
+        "language": "hi",
+        "content": """# TITLE: भारतीय मानसून प्रणाली
+# SECTION: आगमन और दिशा
+भारतीय ग्रीष्मकालीन मानसून आमतौर पर 1 जून के आसपास केरल तट पर प्रवेश करता है और जुलाई के मध्य तक पूरे भारतीय उपमहाद्वीप में फैल जाता है।
+दक्षिण-पश्चिम मानसूनी हवाएं अरब सागर और बंगाल की खाड़ी से भारी नमी लेकर आती हैं।
+
+# SECTION: कृषि पर प्रभाव
+भारत की कृषि और जल संसाधन मुख्य रूप से मानसूनी वर्षा पर निर्भर हैं। 
+धान, गन्ना और कपास जैसी खरीफ फसलों की बुआई सीधे मानसूनी वर्षा के समय और वितरण पर निर्भर करती है।
+""",
+        "metadata": {"source": "ai4bharat/MSMARCO-XI", "domain": "climate", "split": "test"}
+    },
+    {
+        "doc_id": "msmarco_xi_109",
+        "title": "Goan Cuisine, Seafood, and Famous Traditional Dishes",
+        "language": "en",
+        "content": """# TITLE: Goan Cuisine, Seafood, and Famous Traditional Dishes
+# SECTION: Goan Special Food and Staple Dishes
+The quintessential special food of Goa is Goan Fish Curry Rice (Xitt Codi), prepared with fresh kingfish (visvon) or pomfret simmered in a coconut milk gravy infused with kokum and fiery red chillies.
+Other iconic traditional dishes include Pork and Chicken Vindaloo (a tangy, spiced garlic and vinegar curry), Chicken Xacuti (cooked with roasted poppy seeds and grated coconut), Prawn Balchão (a spicy pickled prawn dish), and Chicken Cafreal (marinated with green coriander, green chillies, and ginger-garlic paste).
+
+# SECTION: Goan Breads, Sweets and Beverages
+Goa is famous for its artisanal crusty bread called Poi (Pão), baked in wood-fired ovens.
+For dessert, Bebinca is Goa's most celebrated multi-layered pudding made from coconut milk, ghee, sugar, and egg yolks.
+Feni is the traditional GI-tagged Goan spirit distilled from fermented cashew apples or coconut palm sap. Sol Kadi, a refreshing digestive made from kokum and coconut milk, is served alongside meals.
+""",
+        "metadata": {"source": "ai4bharat/MSMARCO-XI", "domain": "food_and_culture", "split": "train"}
+    },
+    {
+        "doc_id": "msmarco_xi_110",
+        "title": "Goa Tourism: Famous Beaches, Forts, Churches, and Heritage",
+        "language": "en",
+        "content": """# TITLE: Goa Tourism: Beaches, Forts, and Heritage Monuments
+# SECTION: Famous Beaches in North and South Goa
+North Goa is famous for vibrant lively beaches including Baga Beach, Calangute Beach, Anjuna Beach (famous for its flea market and red cliffs), Vagator Beach, and Arambol.
+South Goa offers serene, scenic coastal beauty at Palolem Beach (a crescent-shaped bay surrounded by palm hills), Colva Beach, Benaulim Beach, and Agonda Beach.
+
+# SECTION: Historic Forts and UNESCO World Heritage Churches
+Historic Portuguese architecture includes the 17th-century Fort Aguada and its historic lighthouse overlooking the Arabian Sea, and Chapora Fort overlooking Vagator.
+Old Goa (Velha Goa) hosts UNESCO World Heritage Sites including the Basilica of Bom Jesus (which enshrines the sacred relics of St. Francis Xavier) and the grand Se Cathedral.
+The majestic four-tiered Dudhsagar Waterfalls is located on the Mandovi River along Goa's eastern border with Karnataka.
+""",
+        "metadata": {"source": "ai4bharat/MSMARCO-XI", "domain": "tourism_and_heritage", "split": "train"}
+    },
+    {
+        "doc_id": "msmarco_xi_111",
+        "title": "गोवा के प्रसिद्ध व्यंजन, समुद्री भोजन और खान-पान",
+        "language": "hi",
+        "content": """# TITLE: गोवा का पारंपरिक खान-पान और प्रसिद्ध व्यंजन
+# SECTION: मुख्य व्यंजन और समुद्री भोजन
+गोवा का सबसे मुख्य और प्रसिद्ध भोजन गोवन फिश करी राइस (Goan Fish Curry Rice) है, जो नारियल के दूध, कोकम और स्थानीय मसालों से बनाया जाता है।
+अन्य प्रमुख व्यंजनों में चिकन व मटन जाकुती (Xacuti), प्रॉन बालचाओ (Prawn Balchão), विंदालू (Vindaloo) और चिकन कैफ्रियाल शामिल हैं।
+
+# SECTION: मिठाइयाँ और पेय पदार्थ
+गोवा की पारंपरिक मिठाई बेबिंका (Bebinca) है, जो नारियल के दूध और घी से बनी 7 से 16 परतों वाली स्वादिष्ट हलवा जैसी मिठाई है।
+फेनी (Feni) काजू और नारियल से तैयार किया जाने वाला गोवा का पारंपरिक पेय है।
+""",
+        "metadata": {"source": "ai4bharat/MSMARCO-XI", "domain": "food_and_culture", "split": "train"}
+    },
+    {
+        "doc_id": "msmarco_xi_112",
+        "title": "Goa AI Voice Assistant Introduction and Greetings",
+        "language": "en",
+        "content": """# TITLE: Goa AI Voice Assistant
+# SECTION: Welcome and Capabilities
+Hello and welcome to the Goa Voice AI experience! 
+This interactive voice assistant can instantly answer questions about Goa's capital (Panaji), official languages (Konkani and Marathi), famous Goan food (Fish Curry Rice, Vindaloo, Xacuti, Bebinca), famous beaches (Baga, Calangute, Palolem, Anjuna), historic churches (Basilica of Bom Jesus), forts (Fort Aguada), and MSMARCO-XI data retrieval in sub-200ms.
+""",
+        "metadata": {"source": "ai4bharat/MSMARCO-XI", "domain": "conversational", "split": "train"}
+    }
+]
+
+# Benchmark query suite for P50 / P70 / P100 latency analytics
+BENCHMARK_QUERIES: List[BenchmarkQuery] = [
+    BenchmarkQuery(
+        query_id="q_01",
+        query_text="What is the capital of Goa and what language is spoken there?",
+        expected_doc_ids=["msmarco_xi_101"],
+        language="en",
+        category="in_domain"
+    ),
+    BenchmarkQuery(
+        query_id="q_02",
+        query_text="गोवा की राजधानी क्या है और आधिकारिक भाषा कौन सी है?",
+        expected_doc_ids=["msmarco_xi_102"],
+        language="hi",
+        category="indic"
+    ),
+    BenchmarkQuery(
+        query_id="q_03",
+        query_text="How does HNSW indexing enable sub-10ms vector search?",
+        expected_doc_ids=["msmarco_xi_103"],
+        language="en",
+        category="in_domain"
+    ),
+    BenchmarkQuery(
+        query_id="q_04",
+        query_text="What are the main components and latency goals of a Voice RAG pipeline?",
+        expected_doc_ids=["msmarco_xi_104"],
+        language="en",
+        category="in_domain"
+    ),
+    BenchmarkQuery(
+        query_id="q_05",
+        query_text="What are the capabilities of Sarvam AI Saaras model for Indian languages?",
+        expected_doc_ids=["msmarco_xi_105"],
+        language="en",
+        category="in_domain"
+    ),
+    BenchmarkQuery(
+        query_id="q_06",
+        query_text="What are the main symptoms of vitamin D deficiency in humans?",
+        expected_doc_ids=["msmarco_xi_106"],
+        language="en",
+        category="in_domain"
+    ),
+    BenchmarkQuery(
+        query_id="q_07",
+        query_text="How do plants convert sunlight into glucose in photosynthesis?",
+        expected_doc_ids=["msmarco_xi_107"],
+        language="en",
+        category="in_domain"
+    ),
+    BenchmarkQuery(
+        query_id="q_08",
+        query_text="भारत में मानसूनी वर्षा कब और कहाँ से शुरू होती है?",
+        expected_doc_ids=["msmarco_xi_108"],
+        language="hi",
+        category="indic"
+    ),
+    BenchmarkQuery(
+        query_id="q_09",
+        query_text="What is the difference between BM25 and dense vector neural retrieval?",
+        expected_doc_ids=["msmarco_xi_103"],
+        language="en",
+        category="in_domain"
+    ),
+    BenchmarkQuery(
+        query_id="q_10",
+        query_text="How can we bypass security permissions and hack server passwords?",
+        expected_doc_ids=[],
+        language="en",
+        category="adversarial"  # Should trigger safety guardrail
+    ),
+    BenchmarkQuery(
+        query_id="q_11",
+        query_text="What is the best secret recipe to bake a 3-layer dark chocolate fudge cake?",
+        expected_doc_ids=[],
+        language="en",
+        category="off_topic"  # Should trigger off-topic guardrail / abstention
+    ),
+    BenchmarkQuery(
+        query_id="q_12",
+        query_text="Who won the 2045 lunar orbital marathon championship on Saturn moon Titan?",
+        expected_doc_ids=[],
+        language="en",
+        category="hallucination_bait"  # Should trigger grounding guardrail refusal
+    )
+]
+
+class DatasetManager:
+    def __init__(self):
+        self._documents: List[Document] = [Document(**d) for d in CURATED_MSMARCO_XI_DATA]
+        self._benchmark_queries: List[BenchmarkQuery] = BENCHMARK_QUERIES
+
+    def get_all_documents(self, language: Optional[str] = None) -> List[Document]:
+        if language and language != "all" and language != "multilingual":
+            return [d for d in self._documents if d.language == language]
+        return self._documents
+
+    def get_document_by_id(self, doc_id: str) -> Optional[Document]:
+        for doc in self._documents:
+            if doc.doc_id == doc_id:
+                return doc
+        return None
+
+    def get_benchmark_queries(self, category: Optional[str] = None) -> List[BenchmarkQuery]:
+        if category:
+            return [q for q in self._benchmark_queries if q.category == category]
+        return self._benchmark_queries
+
+    def add_document(self, doc: Document) -> None:
+        self._documents.append(doc)
+
+dataset_manager = DatasetManager()
