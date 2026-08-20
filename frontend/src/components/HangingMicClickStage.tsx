@@ -264,15 +264,15 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
       <div
         style={{
           right: `${mountRight - 5}px`,
-          top: '30px',
-          height: `${Math.max(0, currentMicY - 18)}px`,
+          top: '32px',
+          height: `${Math.max(0, currentMicY - 30)}px`,
           width: '10px',
           backgroundImage: "url('/assets/vintage_cable_tile.png')",
           backgroundRepeat: 'repeat-y',
           backgroundSize: '10px auto',
           backgroundPosition: 'center top',
         }}
-        className="absolute z-0 pointer-events-none filter drop-shadow-[3px_3px_0px_rgba(0,0,0,0.8)]"
+        className="absolute z-10 pointer-events-none filter drop-shadow-[2px_2px_0px_rgba(0,0,0,0.8)]"
       />
 
       {/* ======================================================== */}
