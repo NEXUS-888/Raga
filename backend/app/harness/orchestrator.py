@@ -183,7 +183,13 @@ class PipelineOrchestrator:
                 step_name="LLM Grounded Synthesis",
                 status="success",
                 execution_time_ms=waterfall.generation_ms,
-                details={"llm_provider": gen_meta.get("provider", "default"), "answer_length": len(answer), "is_general": is_general}
+                details={
+                    "llm_provider": gen_meta.get("provider", "default"),
+                    "route_decision": gen_meta.get("route_decision", "auto"),
+                    "route_reason": gen_meta.get("route_reason", ""),
+                    "answer_length": len(answer),
+                    "is_general": is_general
+                }
             ))
         except Exception as e:
             gen_elapsed = (time.perf_counter() - gen_t0) * 1000

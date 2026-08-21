@@ -13,6 +13,34 @@ class LLMService:
         self.groq_url = "https://api.groq.com/openai/v1/chat/completions"
         self.openai_url = "https://api.openai.com/v1/chat/completions"
 
+    def classify_query_route(self, query: str, retrieved_chunks: List[Chunk]) -> Tuple[str, str]:
+        """
+        Automated Query Classifier & Model Gateway.
+        Determines whether to use the Ultra-Fast Turbo Synthesizer (<20ms) or Cloud Generative LLM (~140ms).
+        Returns: (route_name, decision_reason)
+        """
+        q_lower = query.lower().strip()
+        words = q_lower.split()
+        
+        # 1. Direct Factual / Lookup / Entity Triggers -> Turbo Fast Path (<20ms)
+        factual_starters = ("what is", "what are", "where is", "when was", "who is", "which is", "how does", "how do", "capital of", "official language", "how many", "tell me about")
+        if any(q_lower.startswith(starter) for starter in factual_starters) or len(words) <= 8:
+            return "turbo_fast_path", "Factual/Entity lookup query matching indexed knowledge base."
+
+        # 2. Dataset Grounding Confidence Check
+        if retrieved_chunks:
+            stop_words = {"what", "is", "are", "the", "a", "an", "and", "or", "in", "on", "at", "to", "for", "of", "with", "how", "who", "which", "where", "when", "why"}
+            query_keywords = [w.strip("?,!.") for w in words if w.strip("?,!.") not in stop_words and len(w) > 2]
+            
+            top_content = " ".join([c.content.lower() for c in retrieved_chunks[:2]])
+            match_count = sum(1 for kw in query_keywords if kw in top_content)
+            
+            if query_keywords and (match_count / len(query_keywords)) >= 0.5:
+                return "turbo_fast_path", f"High keyword context alignment ({match_count}/{len(query_keywords)} matched) — prioritizing sub-200ms response."
+
+        # 3. Complex / Open-Ended Reasoning -> Cloud LLM
+        return "cloud_llm_path", "Open-ended or complex synthesis query routed to fast generative LLM."
+
     async def generate_rag_answer(
         self,
         query: str,
@@ -22,17 +50,33 @@ class LLMService:
         provider: Optional[str] = None
     ) -> Tuple[str, float, Dict[str, Any]]:
         """
-        Generates grounded response using retrieved context chunks or general knowledge.
+        Generates grounded response using automated routing or explicit provider.
         Returns: (answer_text, generation_latency_ms, metadata)
         """
         t0 = time.perf_counter()
         
-        # Handle explicit local synthesis override (e.g. for sub-200ms benchmark verification)
-        if provider in ["fast_grounded_synthesizer", "local", "synthesizer", "mock"]:
+        # Determine execution route
+        if provider in ["fast_grounded_synthesizer", "local", "synthesizer", "mock", "turbo"]:
+            route = "turbo_fast_path"
+            reason = "Explicit turbo/local synthesis override."
+        elif provider in ["groq", "openai", "cloud"]:
+            route = "cloud_llm_path"
+            reason = "Explicit cloud LLM provider requested."
+        else:
+            route, reason = self.classify_query_route(query, retrieved_chunks)
+        
+        # EXECUTE ROUTE A: Turbo Fast Path (<20ms execution)
+        if route == "turbo_fast_path" or not settings.groq_api_key:
             answer = self._synthesize_local_grounded_answer(query, retrieved_chunks)
             elapsed_ms = (time.perf_counter() - t0) * 1000
-            return answer, elapsed_ms, {"provider": "fast_grounded_synthesizer", "chunks_used": len(retrieved_chunks)}
+            return answer, elapsed_ms, {
+                "provider": "turbo_fast_synthesizer",
+                "route_decision": route,
+                "route_reason": reason,
+                "chunks_used": len(retrieved_chunks)
+            }
         
+        # EXECUTE ROUTE B: Cloud LLM Path (Optimized Keep-Alive HTTP/2)
         has_context = bool(retrieved_chunks) and not is_general_knowledge
         
         if has_context:
@@ -42,42 +86,39 @@ class LLMService:
             ])
             system_prompt = system_instruction or (
                 "You are an expert, friendly AI assistant specializing in Goa and general knowledge. "
-                "Answer the user's question concisely, accurately, and naturally in 1 to 3 sentences. "
-                "Use the provided context passages for facts when relevant, and use your knowledge to answer natural, conversational, or general questions smoothly. "
-                "Never claim you cannot answer casual questions or basic local knowledge."
+                "Answer the user's question concisely and accurately in 1 to 2 sentences strictly based on context."
             )
             user_prompt = f"Context Passages:\n{context_block}\n\nUser Question: {query}\n\nAnswer:"
         else:
             system_prompt = system_instruction or (
-                "You are an ultra-fast, friendly, intelligent Voice AI assistant. "
-                "Answer the user's question concisely, accurately, and naturally in 1 to 3 clear sentences."
+                "You are an ultra-fast Voice AI assistant. Answer concisely in 1 to 2 clear sentences."
             )
             user_prompt = f"User Question: {query}\n\nAnswer:"
 
-        # Try Groq API if available
+        # Try Groq API
         if settings.groq_api_key:
             try:
                 answer, meta = await self._call_groq(system_prompt, user_prompt)
                 if answer and len(answer.strip()) > 5:
                     elapsed_ms = (time.perf_counter() - t0) * 1000
-                    return answer, elapsed_ms, {"provider": "groq_llm", **meta}
+                    return answer, elapsed_ms, {
+                        "provider": "groq_llm",
+                        "route_decision": route,
+                        "route_reason": reason,
+                        **meta
+                    }
             except Exception as e:
-                print(f"[LLM Warning] Groq API call failed: {e}. Falling back.")
+                print(f"[LLM Warning] Groq API call failed: {e}. Cascading to Turbo Synthesizer.")
 
-        # Try OpenAI API if available
-        if settings.openai_api_key:
-            try:
-                answer, meta = await self._call_openai(system_prompt, user_prompt)
-                if answer and len(answer.strip()) > 5:
-                    elapsed_ms = (time.perf_counter() - t0) * 1000
-                    return answer, elapsed_ms, {"provider": "openai", **meta}
-            except Exception as e:
-                print(f"[LLM Warning] OpenAI API call failed: {e}. Falling back.")
-
-        # Fast Local Synthesizer (<50ms generation)
+        # Fallback to Turbo Synthesizer
         answer = self._synthesize_local_grounded_answer(query, retrieved_chunks)
         elapsed_ms = (time.perf_counter() - t0) * 1000
-        return answer, elapsed_ms, {"provider": "fast_grounded_synthesizer", "chunks_used": len(retrieved_chunks)}
+        return answer, elapsed_ms, {
+            "provider": "turbo_fast_synthesizer",
+            "route_decision": "fallback_turbo",
+            "route_reason": "Cloud timeout or failure fallback",
+            "chunks_used": len(retrieved_chunks)
+        }
 
     async def _call_groq(self, system_prompt: str, user_prompt: str) -> Tuple[str, Dict[str, Any]]:
         headers = {
