@@ -50,6 +50,26 @@ def create_app() -> FastAPI:
             "indexed_chunks": len(vector_db.chunks)
         }
 
+    # High-Performance Single-Origin SPA Serving (Zero CORS Latency)
+    import os
+    from fastapi.staticfiles import StaticFiles
+    from fastapi.responses import FileResponse
+
+    dist_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../frontend/dist"))
+    if os.path.exists(dist_path):
+        assets_dir = os.path.join(dist_path, "assets")
+        if os.path.exists(assets_dir):
+            app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+        @app.get("/{full_path:path}")
+        async def serve_spa(full_path: str):
+            if full_path.startswith("api/"):
+                return {"error": "Not Found"}
+            file_p = os.path.join(dist_path, full_path)
+            if os.path.exists(file_p) and os.path.isfile(file_p):
+                return FileResponse(file_p)
+            return FileResponse(os.path.join(dist_path, "index.html"))
+
     return app
 
 app = create_app()
