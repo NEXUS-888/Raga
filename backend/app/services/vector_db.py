@@ -19,13 +19,14 @@ class FastEmbeddingEngine:
     High-throughput, ultra-low-latency embedding engine optimized for <5ms embedding generation.
     Uses word n-gram TF-IDF projection with unit L2-normalization and fixed dimension padding.
     """
-    def __init__(self, dimension: int = 128):
+    def __init__(self, dimension: int = 384):
         self.dimension = dimension
         self.vectorizer = TfidfVectorizer(
             analyzer="word",
             ngram_range=(1, 2),
             max_features=dimension,
-            sublinear_tf=True
+            sublinear_tf=True,
+            stop_words="english"
         )
         self._is_fitted = False
 
@@ -123,8 +124,8 @@ class HybridVectorDB:
         self,
         query: str,
         top_k: int = 3,
-        dense_weight: float = 0.6,
-        sparse_weight: float = 0.4,
+        dense_weight: float = 0.4,
+        sparse_weight: float = 0.6,
         rrf_k: int = 60
     ) -> Tuple[List[Chunk], Dict[str, float]]:
         """

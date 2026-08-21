@@ -192,13 +192,21 @@ class LLMService:
     def _synthesize_local_grounded_answer(self, query: str, chunks: List[Chunk]) -> str:
         """
         Synthesizes an intelligent, factually grounded answer by scoring sentences across all retrieved chunks.
+        Strictly enforces entity alignment to prevent attributing facts to the wrong subject.
         """
         if not chunks:
             return "I am unable to answer this question because no relevant context was found in the indexed MSMARCO-XI dataset."
 
-        stop_words = {"what", "is", "are", "the", "a", "an", "and", "or", "in", "on", "at", "to", "for", "of", "with", "how", "who", "which", "where", "when", "why", "about", "tell", "me"}
-        query_words = [w.lower().strip("?,!.") for w in query.split() if w.lower().strip("?,!.") not in stop_words and len(w) > 2]
+        stop_words = {"what", "is", "are", "the", "a", "an", "and", "or", "in", "on", "at", "to", "for", "of", "with", "how", "who", "which", "where", "when", "why", "about", "tell", "me", "what's", "whats"}
+        query_words = [w.lower().strip("?,!.'\"") for w in query.split() if w.lower().strip("?,!.'\"") not in stop_words and len(w) > 1]
         
+        if not query_words:
+            query_words = [w.lower() for w in query.split()]
+
+        # Identify key subject terms (words other than generic question keywords like "capital", "city", "food")
+        generic_terms = {"capital", "city", "state", "country", "food", "beach", "fort", "place", "river", "dish", "name"}
+        subject_keywords = [w for w in query_words if w not in generic_terms and len(w) > 2]
+
         all_sentences = []
         for chunk in chunks:
             for line in chunk.content.split("\n"):
@@ -210,19 +218,36 @@ class LLMService:
                 for s in parts:
                     clean_s = s.rstrip(".") + "."
                     s_lower = clean_s.lower()
-                    score = sum(2.0 for qw in query_words if qw in s_lower)
-                    if any(term in s_lower for term in ["beach", "capital", "food", "fort", "church", "tourism", "heritage"]):
-                        score += 1.0
+                    
+                    # Compute match score
+                    score = 0.0
+                    for qw in query_words:
+                        if qw in s_lower:
+                            score += 3.0
+                            # Extra boost if the matched term is the primary subject keyword
+                            if qw in subject_keywords:
+                                score += 5.0
+                    
+                    # Verify subject presence if specific subjects exist
+                    if subject_keywords:
+                        has_subject = any(skw in s_lower for skw in subject_keywords)
+                        if not has_subject:
+                            score *= 0.1  # Strongly penalize sentences that lack the subject entity
+                            
                     all_sentences.append((score, clean_s))
 
         # Sort by relevance score descending
         all_sentences.sort(key=lambda x: x[0], reverse=True)
-        top_sentences = [s for score, s in all_sentences if score > 0]
+        top_sentences = [s for score, s in all_sentences if score >= 2.0]
         
         if top_sentences:
             return " ".join(top_sentences[:2])
             
-        # Fallback to first clean sentence of the top chunk
+        # If subject keywords were present in query but completely absent in retrieved context, abstain
+        if subject_keywords:
+            return f"I do not have verified evidence in the indexed MSMARCO-XI dataset regarding {query}. The dataset contains verified records for Goa, Indian state capitals (such as Karnataka - Bengaluru, Maharashtra - Mumbai), and related topics."
+            
+        # Fallback to top sentence of the top chunk if general
         for line in chunks[0].content.split("\n"):
             if line.strip() and not line.startswith("#"):
                 return line.strip()
@@ -230,3 +255,4 @@ class LLMService:
         return chunks[0].content.strip()
 
 llm_service = LLMService()
+
