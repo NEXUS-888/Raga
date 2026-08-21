@@ -335,8 +335,8 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
     onMicClick();
   };
 
-  // Base hanging cable length & Responsive physics
-  const baseCableHeight = isListening ? (isMobile ? 65 : 180) : (isMobile ? 35 : 125);
+  // Base hanging cable length & Responsive physics (generous clearance below header)
+  const baseCableHeight = isListening ? (isMobile ? 95 : 180) : (isMobile ? 65 : 125);
   const cableHeight = isDragging ? baseCableHeight + dragOffset.y * 0.4 : baseCableHeight;
   const pulseScale = isListening ? Math.min(1.12, 1 + volumeLevel * 0.25) : 1;
 
@@ -351,7 +351,7 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
           transform: 'translateX(-50%)',
           top: 0,
           width: isMobile ? '110px' : '140px',
-          height: isMobile ? '28px' : '36px',
+          height: isMobile ? '26px' : '36px',
         }}
         className="absolute z-20 pointer-events-auto flex items-center justify-center filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)]"
       >
@@ -413,7 +413,7 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
         {/* 2B. MICROPHONE CAPSULE (Seamlessly locked into the cable bottom) */}
         <div
           style={{
-            width: isMobile ? '96px' : '134px',
+            width: isMobile ? '92px' : '134px',
             marginTop: isMobile ? '-8px' : '-12px', // Deep physical overlap into the top purple connector collar
             transform: `scale(${pulseScale})`,
             transformOrigin: '49% 12px',
@@ -445,12 +445,9 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
       {/* ======================================================== */}
       {isListening && (
         <div
-          style={{
-            top: isMobile ? '70px' : `${baseCableHeight + 175}px`,
-          }}
-          className="fixed sm:absolute inset-x-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-40 sm:w-full sm:max-w-lg pointer-events-auto animate-slide-up"
+          className="fixed bottom-4 sm:bottom-auto sm:top-[330px] inset-x-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-40 sm:w-full sm:max-w-lg pointer-events-auto animate-slide-up"
         >
-          <div className="p-4 sm:p-6 bg-[#FFFDF8] text-slate-900 border-2 sm:border-3 border-black rounded-2xl sm:rounded-3xl shadow-[6px_6px_0px_#000] sm:shadow-[8px_8px_0px_#000] max-h-[55vh] overflow-y-auto">
+          <div className="p-4 sm:p-6 bg-[#FFFDF8] text-slate-900 border-2 sm:border-3 border-black rounded-2xl sm:rounded-3xl shadow-[6px_6px_0px_#000] sm:shadow-[8px_8px_0px_#000] max-h-[50vh] sm:max-h-[55vh] overflow-y-auto">
             {/* Header */}
             <div className="flex items-center justify-between border-b-2 border-black pb-2 mb-2.5 sm:pb-2.5 sm:mb-3">
               <div className="flex items-center space-x-2">

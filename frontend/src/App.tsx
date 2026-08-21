@@ -286,7 +286,7 @@ export const App: React.FC = () => {
 
           {/* 💬 4. Tester Guide & Bottom Input with Categorized Prompt Chips */}
           {isRevealed && (
-            <div className="fixed bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 w-full max-w-3xl px-3 sm:px-4 flex flex-col items-center space-y-2 pointer-events-auto animate-slide-up pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+            <div className={`fixed bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 w-full max-w-3xl px-3 sm:px-4 flex-col items-center space-y-2 pointer-events-auto animate-slide-up pb-[max(0.5rem,env(safe-area-inset-bottom))] ${(isListening || ragResult) ? 'hidden sm:flex' : 'flex'}`}>
               {/* Category Filter Pills */}
               <div className="flex items-center space-x-1 sm:space-x-1.5 p-1 bg-black/85 backdrop-blur-md rounded-full border-2 border-black text-[10px] sm:text-[11px] font-bold shadow-[2px_2px_0px_#000] max-w-full overflow-x-auto no-scrollbar">
                 {Object.entries(promptCategories).map(([key, cat]) => (
