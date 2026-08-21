@@ -253,45 +253,6 @@ Chapora Fort, perched above the Chapora River and Vagator Beach, offers panorami
 Reis Magos Fort, built in 1551, is one of Goa's oldest restored defense bastions located near Panaji on the Mandovi River.
 """,
         "metadata": {"source": "ai4bharat/MSMARCO-XI", "domain": "history", "split": "train"}
-    },
-    {
-        "doc_id": "msmarco_xi_116",
-        "title": "Indian States, Capitals, and Major Metropolitan Centers",
-        "language": "en",
-        "content": """# TITLE: Indian States and Their Capital Cities
-# SECTION: Southern and Western Indian States
-The capital of Karnataka is Bengaluru (formerly Bangalore), renowned as the premier technology and Silicon Valley hub of India.
-The capital of Maharashtra is Mumbai, which is the financial capital of India and its most populous metropolitan city.
-The capital of Kerala is Thiruvananthapuram (Trivandrum), known for its coastal heritage and academic institutions.
-The capital of Tamil Nadu is Chennai (formerly Madras), situated along the Coromandel Coast of the Bay of Bengal.
-The capital of Telangana is Hyderabad, and the capital of Andhra Pradesh is Amaravati.
-
-# SECTION: Northern, Eastern, and Western States
-The capital of Gujarat is Gandhinagar, while Ahmedabad is its largest commercial city.
-The capital of Rajasthan is Jaipur, famously known as the Pink City.
-The capital of West Bengal is Kolkata (formerly Calcutta), a major cultural center in eastern India.
-New Delhi is the national capital of India and the seat of all three branches of the Government of India.
-""",
-        "metadata": {"source": "ai4bharat/MSMARCO-XI", "domain": "geography_and_states", "split": "train"}
-    },
-    {
-        "doc_id": "msmarco_xi_117",
-        "title": "भारत के प्रमुख राज्य, राजधानियाँ और प्रमुख शहर",
-        "language": "hi",
-        "content": """# TITLE: भारत के राज्य और उनकी राजधानियाँ
-# SECTION: दक्षिण और पश्चिम भारत के राज्य
-कर्नाटक राज्य की राजधानी बेंगलुरु (Bengaluru) है, जिसे भारत की सिलिकॉन वैली कहा जाता है।
-महाराष्ट्र की राजधानी मुंबई (Mumbai) है, जो भारत की आर्थिक राजधानी है।
-केरल की राजधानी तिरुवनंतपुरम (Thiruvananthapuram) है।
-तमिलनाडु की राजधानी चेन्नई (Chennai) है।
-गुजरात की राजधानी गांधीनगर (Gandhinagar) है।
-राजस्थान की राजधानी जयपुर (Jaipur) है जिसे 'गुलाबी नगरी' भी कहा जाता है।
-
-# SECTION: राष्ट्रीय राजधानी
-भारत की राष्ट्रीय राजधानी नई दिल्ली (New Delhi) है।
-पश्चिम बंगाल की राजधानी कोलकाता (Kolkata) है।
-""",
-        "metadata": {"source": "ai4bharat/MSMARCO-XI", "domain": "geography_and_states", "split": "train"}
     }
 ]
 

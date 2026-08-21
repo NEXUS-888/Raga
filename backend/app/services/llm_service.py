@@ -245,7 +245,7 @@ class LLMService:
             
         # If subject keywords were present in query but completely absent in retrieved context, abstain
         if subject_keywords:
-            return f"I do not have verified evidence in the indexed MSMARCO-XI dataset regarding {query}. The dataset contains verified records for Goa, Indian state capitals (such as Karnataka - Bengaluru, Maharashtra - Mumbai), and related topics."
+            return f"I am a Goa Voice RAG assistant specialized in Goa tourism, culture, and heritage. I do not have verified records regarding '{query}' in the Goa knowledge base."
             
         # Fallback to top sentence of the top chunk if general
         for line in chunks[0].content.split("\n"):
