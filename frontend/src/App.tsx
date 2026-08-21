@@ -11,7 +11,7 @@ import { FloatingOrganicAnswer } from './components/FloatingOrganicAnswer';
 import { SpecsDrawer } from './components/SpecsDrawer';
 import type { VoiceRAGResponse } from './types';
 
-const API_BASE = "http://localhost:8001";
+const API_BASE = "";
 
 export const App: React.FC = () => {
   const [isRevealed, setIsRevealed] = useState<boolean>(false);
@@ -127,6 +127,14 @@ export const App: React.FC = () => {
     }
   };
 
+  const voiceSceneState = isListening
+    ? 'LISTENING'
+    : isLoading
+    ? 'PROCESSING'
+    : ragResult
+    ? 'RESPONDING'
+    : 'IDLE';
+
   const sampleQuestions = [
     "What is the capital of Goa and official language?",
     "गोवा की राजधानी क्या है और आधिकारिक भाषा कौन सी है?",
@@ -136,8 +144,12 @@ export const App: React.FC = () => {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-[#05070D] font-sans select-none">
-      {/* 🌴 1. Goa Coastal & Twilight Landscape (Pitch black until mic is clicked) */}
-      <GoaBeachEnvironment isRevealed={isRevealed} glimmerTrigger={glimmerTrigger} />
+      {/* 🌴 1. Goa Coastal & Twilight Landscape (Living Animated Environment) */}
+      <GoaBeachEnvironment
+        isRevealed={isRevealed}
+        glimmerTrigger={glimmerTrigger}
+        sceneState={voiceSceneState}
+      />
 
       {/* 🎙️ 2. Hanging Studio Microphone (Positioned in highlighted upper-right/center) */}
       <HangingMicClickStage

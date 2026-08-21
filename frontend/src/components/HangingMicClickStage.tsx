@@ -210,8 +210,6 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
     setVolumeLevel(0);
   };
 
-  // Mic anchor coordinates
-  const mountRight = 240;
   const [isDragging, setIsDragging] = useState(false);
   const [dragY, setDragY] = useState(0);
   const startYRef = useRef(0);
@@ -261,10 +259,10 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
   return (
     <div className="fixed inset-0 pointer-events-none z-30 select-none overflow-visible">
       {/* ======================================================== */}
-      {/* 1. TOP CEILING MOUNT DISH (Fixed Permanently at Ceiling)  */}
+      {/* 1. TOP CEILING MOUNT DISH (Centered at Top Ceiling)       */}
       {/* ======================================================== */}
       <div
-        style={{ right: `${mountRight - 70}px`, top: 0, width: '140px', height: '38px' }}
+        style={{ left: '50%', transform: 'translateX(-50%)', top: 0, width: '140px', height: '38px' }}
         className="absolute z-20 pointer-events-auto flex items-center justify-center filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)]"
       >
         <img
@@ -276,11 +274,12 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
       </div>
 
       {/* ======================================================== */}
-      {/* 2. DYNAMIC STRETCHING BRAIDED CABLE (Extends from Ceiling)*/}
+      {/* 2. DYNAMIC STRETCHING BRAIDED CABLE (Centered at Top)     */}
       {/* ======================================================== */}
       <div
         style={{
-          right: `${mountRight - 5}px`,
+          left: '50%',
+          transform: 'translateX(-50%)',
           top: '34px',
           height: `${Math.max(0, currentMicY - 26)}px`,
           width: '10px',
@@ -299,10 +298,11 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
       {isListening && (
         <div
           style={{
-            right: `${mountRight + 110}px`,
-            top: `${currentMicY - 30}px`,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            top: `${currentMicY + 165}px`,
           }}
-          className="absolute pointer-events-auto w-80 p-5 bg-[#FFFDF8] text-slate-900 border-3 border-black rounded-3xl shadow-[8px_8px_0px_#000] animate-slide-up z-30"
+          className="absolute pointer-events-auto w-84 max-w-[92vw] p-5 bg-[#FFFDF8] text-slate-900 border-3 border-black rounded-3xl shadow-[8px_8px_0px_#000] animate-slide-up z-30"
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b-2 border-black pb-2 mb-2.5">
@@ -379,11 +379,12 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
       )}
 
       {/* ======================================================== */}
-      {/* 4. RETRO STUDIO MICROPHONE CAPSULE (Translates on Wire)   */}
+      {/* 4. RETRO STUDIO MICROPHONE CAPSULE (Centered on Wire)     */}
       {/* ======================================================== */}
       <div
         style={{
-          right: `${mountRight - 67}px`,
+          left: '50%',
+          transform: 'translateX(-50%)',
           top: `${currentMicY}px`,
           width: '134px',
           transition: isDragging ? 'none' : 'top 400ms cubic-bezier(0.34, 1.56, 0.64, 1)',
