@@ -274,22 +274,22 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
       </div>
 
       {/* ======================================================== */}
-      {/* 2. DYNAMIC STRETCHING BRAIDED CABLE (Centered at Top)     */}
+      {/* 2. DYNAMIC STRETCHING BRAIDED CABLE (Seamlessly Plugged)  */}
       {/* ======================================================== */}
       <div
         style={{
           left: '50%',
           transform: 'translateX(-50%)',
-          top: '34px',
-          height: `${Math.max(0, currentMicY - 26)}px`,
-          width: '10px',
+          top: '30px',
+          height: `${Math.max(0, currentMicY + 14 - 30)}px`,
+          width: '8px',
           backgroundImage: "url('/assets/vintage_cable_tile.png')",
           backgroundRepeat: 'repeat-y',
-          backgroundSize: '10px auto',
+          backgroundSize: '8px auto',
           backgroundPosition: 'center top',
           transition: isDragging ? 'none' : 'height 1400ms cubic-bezier(0.34, 1.56, 0.64, 1)',
         }}
-        className="absolute z-10 pointer-events-none filter drop-shadow-[2px_2px_0px_rgba(0,0,0,0.8)]"
+        className="absolute z-15 pointer-events-none filter drop-shadow-[2px_2px_0px_rgba(0,0,0,0.9)]"
       />
 
       {/* ======================================================== */}
