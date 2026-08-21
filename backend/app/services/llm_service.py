@@ -209,6 +209,15 @@ class LLMService:
             else:
                 return "Hello! Welcome to the Goa Voice RAG assistant. How can I help you explore Goa's rich culture, capital, beaches, or cuisine today?"
 
+        # 2. Check for explicit outside entities / non-Goa domain queries to enforce active abstention
+        outside_entities = [
+            "karnataka", "kerala", "maharashtra", "delhi", "mumbai", "bangalore", "bengaluru", "tamil nadu",
+            "france", "paris", "japan", "tokyo", "china", "usa", "america", "london", "uk", "germany",
+            "tesla", "spacex", "elon musk", "microsoft", "google", "apple", "amazon"
+        ]
+        if any(e in norm_query for e in outside_entities) and not any(g in norm_query for g in ["goa", "goan", "panaji", "konkani"]):
+            return f"I am a Goa Voice RAG assistant specialized in Goa tourism, culture, and heritage. I do not have verified records regarding '{query}' in the Goa knowledge base."
+
         stop_words = {
             "what", "is", "are", "the", "a", "an", "and", "or", "in", "on", "at", "to", "for", "of",
             "with", "how", "who", "which", "where", "when", "why", "about", "tell", "me", "what's",

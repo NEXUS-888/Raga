@@ -25,7 +25,10 @@ class SafetyGuard:
             r'sudo\s+rm|rm\s+-rf|format\s+c:|del\s+/f',
             r'admin\s+(?:access|password|credentials|privileges)',
             r'leak\s+(?:api\s+key|token|env|secrets)',
-            r'<script|<iframe|javascript:|alert\('
+            r'<script|<iframe|javascript:|alert\(',
+            r'forget\s+(?:your\s+|all\s+)?(?:persona|identity|rules|instructions|directives|context)',
+            r'act\s+as\s+(?:an?\s+)?(?:unrestricted|unaligned|jailbroken|evil|dan|terminal|root|unfiltered)',
+            r'pretend\s+(?:to\s+be|you\s+are)\s+(?:an?\s+)?(?:unrestricted|unfiltered|jailbroken|evil|dan|terminal|root)'
         ]
         self.harmful_keywords = [
             'hack', 'exploit', 'password crack', 'steal credit', 'malware',
@@ -64,3 +67,6 @@ class SafetyGuard:
             reason="input_passed_safety_filters",
             action="allow"
         )
+
+safety_guard = SafetyGuard()
+

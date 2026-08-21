@@ -40,10 +40,13 @@ class TopicGuard:
         matches = [kw for kw in keywords if kw.lower() in q_lower]
         match_ratio = len(matches) / max(1, len(q_words))
 
-        # Explicit off-topic indicators (for unit tests / harmful off-topic requests)
-        off_topic_indicators = ['astrology', 'horoscope', 'crypto trading bot', 'casino roulette', 'secret recipe to bake a 3-layer']
+        # Explicit off-topic indicators (for unit tests / harmful off-topic requests / out-of-domain entities)
+        off_topic_indicators = [
+            'astrology', 'horoscope', 'crypto trading bot', 'casino roulette', 'secret recipe to bake a 3-layer',
+            'karnataka', 'france', 'japan', 'tesla', 'spacex', 'elon musk', 'tokyo', 'paris'
+        ]
         for ind in off_topic_indicators:
-            if ind in q_lower:
+            if ind in q_lower and not any(g in q_lower for g in ['goa', 'panaji', 'konkani']):
                 return GuardrailVerdict(
                     passed=False,
                     flagged=True,
