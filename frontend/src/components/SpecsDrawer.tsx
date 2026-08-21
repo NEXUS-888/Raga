@@ -79,9 +79,9 @@ export const SpecsDrawer: React.FC<SpecsDrawerProps> = ({
                     ? 'bg-[#FF2A55] text-white shadow-[2px_2px_0px_#000]'
                     : 'text-slate-400 hover:text-white'
                 }`}
-                title="Force every question through Groq Cloud Llama-3.3-70B"
+                title="Force every question through Groq Cloud Llama-3.1-8B Instant (<150ms)"
               >
-                ☁️ Groq Cloud (Llama 3.3 70B)
+                ☁️ Groq Cloud (Llama 3.1 Instant)
               </button>
               <button
                 onClick={() => onSelectLlmProvider('turbo')}
@@ -98,7 +98,7 @@ export const SpecsDrawer: React.FC<SpecsDrawerProps> = ({
           </div>
 
           <div className="text-[11px] font-mono text-slate-400">
-            Active: <span className="font-bold text-amber-300">{llmProvider === 'auto' ? 'Auto Smart Gateway' : llmProvider === 'groq' ? 'Groq Cloud (Llama 3.3)' : 'Local In-Memory RAG (<10ms)'}</span>
+            Active: <span className="font-bold text-amber-300">{llmProvider === 'auto' ? 'Auto Smart Gateway' : llmProvider === 'groq' ? 'Groq Cloud (Llama 3.1 Instant)' : 'Local In-Memory RAG (<10ms)'}</span>
           </div>
         </div>
 

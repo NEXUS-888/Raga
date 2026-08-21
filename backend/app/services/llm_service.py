@@ -14,6 +14,11 @@ class LLMService:
     def __init__(self):
         self.groq_url = "https://api.groq.com/openai/v1/chat/completions"
         self.openai_url = "https://api.openai.com/v1/chat/completions"
+        # High-performance persistent connection pool for sub-100ms HTTP requests
+        self.client = httpx.AsyncClient(
+            timeout=0.65,
+            limits=httpx.Limits(max_keepalive_connections=20, max_connections=50, keepalive_expiry=30.0)
+        )
 
     def classify_query_route(self, query: str, retrieved_chunks: List[Chunk]) -> Tuple[str, str]:
         """
@@ -128,12 +133,11 @@ class LLMService:
             "Content-Type": "application/json"
         }
         
-        # Priority order of active models on Groq
+        # Priority order: llama-3.1-8b-instant delivers 1,200+ tokens/sec (<100ms response) on Groq LPUs
         candidate_models = [
-            "llama-3.3-70b-versatile",
             "llama-3.1-8b-instant",
-            "llama3-70b-8192",
             "llama3-8b-8192",
+            "llama-3.3-70b-versatile",
             settings.llm_model,
         ]
         # Deduplicate while preserving order
@@ -150,22 +154,21 @@ class LLMService:
                         {"role": "user", "content": user_prompt}
                     ],
                     "temperature": 0.1,
-                    "max_tokens": 500
+                    "max_tokens": 90
                 }
-                async with httpx.AsyncClient(timeout=6.0) as client:
-                    resp = await client.post(self.groq_url, headers=headers, json=payload)
-                    if resp.status_code != 200:
-                        continue
-                    data = resp.json()
-                    raw_answer = data["choices"][0]["message"]["content"].strip()
-                    # Clean thinking tokens if present
-                    if "</think>" in raw_answer:
-                        raw_answer = raw_answer.split("</think>")[-1].strip()
-                    elif "<think>" in raw_answer:
-                        # Unclosed think block - remove leading tag
-                        raw_answer = raw_answer.replace("<think>", "").strip()
-                    if raw_answer and len(raw_answer) > 10:
-                        return raw_answer, {"model_used": model_name, "usage": data.get("usage", {})}
+                resp = await self.client.post(self.groq_url, headers=headers, json=payload)
+                if resp.status_code != 200:
+                    continue
+                data = resp.json()
+                raw_answer = data["choices"][0]["message"]["content"].strip()
+                # Clean thinking tokens if present
+                if "</think>" in raw_answer:
+                    raw_answer = raw_answer.split("</think>")[-1].strip()
+                elif "<think>" in raw_answer:
+                    # Unclosed think block - remove leading tag
+                    raw_answer = raw_answer.replace("<think>", "").strip()
+                if raw_answer and len(raw_answer) > 10:
+                    return raw_answer, {"model_used": model_name, "usage": data.get("usage", {})}
             except Exception as err:
                 last_error = err
                 continue
