@@ -1,3 +1,4 @@
+import re
 import time
 import httpx
 import unicodedata
@@ -205,9 +206,21 @@ class LLMService:
             norm_query = norm_query.replace(k, v)
 
         # 1. Gracefully handle conversational greetings and self-intro queries
-        greetings = ["hello", "hi", "hey", "namaste", "good morning", "good evening", "how are you", "who are you", "what can you do", "नमस्ते", "हेलो", "आप कौन हैं"]
+        greetings = [
+            "hello", "hi", "hey", "namaste", "good morning", "good evening", "good afternoon",
+            "how are you", "who are you", "what can you do", "what's up", "whats up", "what is up",
+            "sup", "wassup", "howdy", "how are things", "how's it going", "hows it going",
+            "tell me a joke", "tell me something", "thank you", "thanks", "bye", "goodbye",
+            "नमस्ते", "हेलो", "आप कौन हैं", "क्या हाल है", "सब कैसा है", "धन्यवाद", "शुक्रिया"
+        ]
         if any(norm_query.startswith(g) or g in norm_query for g in greetings) and not any(k in norm_query for k in ["beach", "capital", "food", "fort", "dish", "curry", "feni", "waterfall", "monsoon", "खाना", "व्यंजन", "भोजन", "राजधानी", "तट"]):
-            if "how are you" in norm_query or "आप कैसे" in norm_query:
+            if any(w in norm_query for w in ["what's up", "whats up", "what is up", "sup", "wassup", "क्या हाल"]):
+                return "Not much, just here and ready to help! I am your Goa Voice AI Assistant. You can ask me anything about Goa's beaches, historic forts, local dishes, capital, or heritage!"
+            elif any(w in norm_query for w in ["thank you", "thanks", "धन्यवाद", "शुक्रिया"]):
+                return "You're very welcome! Let me know if you want to explore more about Goa's culture, food, or top destinations!"
+            elif any(w in norm_query for w in ["joke", "चुटकुला"]):
+                return "Why don't secrets last long on Goa's beaches? Because the waves keep telling the shore! How can I help you explore Goa today?"
+            elif "how are you" in norm_query or "how's it going" in norm_query or "आप कैसे" in norm_query:
                 return "Hello! I am doing great and ready to assist you. I am your specialized Goa Voice AI Assistant—ask me anything about Goa's beaches, capital, traditional food, or heritage!"
             elif "who are you" in norm_query or "what can you do" in norm_query or "आप कौन" in norm_query:
                 return "I am the Goa Voice RAG Assistant, designed for sub-200ms voice interactions. I can answer questions about Goa's capital (Panaji), official languages (Konkani/Marathi), famous cuisine (Fish Curry Rice, Bebinca, Feni), beaches, and historic forts!"
@@ -227,6 +240,7 @@ class LLMService:
             "what", "is", "are", "the", "a", "an", "and", "or", "in", "on", "at", "to", "for", "of",
             "with", "how", "who", "which", "where", "when", "why", "about", "tell", "me", "what's",
             "whats", "best", "eat", "good", "some", "can", "you", "please", "i", "want", "know",
+            "up", "down", "there", "just", "say", "give", "some", "any", "thing", "things",
             "का", "की", "के", "में", "से", "को", "पर", "है", "हैं", "था", "थी", "थे", "और", "या", "क्या", "कहाँ", "कौन", "कैसे", "बताओ", "बताएं", "बारे", "बता", "रहे", "बढ़िया", "अच्छा", "सबसे"
         }
         
@@ -280,12 +294,13 @@ class LLMService:
                     
                     s_score = 0.0
                     for qw in query_words:
-                        if qw in s_lower:
+                        # Whole-word regex match to avoid false substring triggers
+                        if re.search(r'\b' + re.escape(qw) + r'\b', s_lower):
                             s_score += 4.0
                         # Check synonym matches (boost for each concrete matching term)
                         for syn_key, syn_vals in synonyms.items():
                             if qw == syn_key:
-                                matched_syns = sum(1 for sv in syn_vals if sv in s_lower)
+                                matched_syns = sum(1 for sv in syn_vals if re.search(r'\b' + re.escape(sv) + r'\b', s_lower))
                                 if matched_syns > 0:
                                     s_score += 3.5 * min(3, matched_syns)
                                 
@@ -303,23 +318,14 @@ class LLMService:
 
         # Sort chunks by highest cumulative relevance score
         chunk_evals.sort(key=lambda x: x[0], reverse=True)
-        if chunk_evals and chunk_evals[0][0] >= 2.0:
-            top_chunk_sentences = [s for score, s in chunk_evals[0][1] if score >= 2.0][:2]
+        if chunk_evals and chunk_evals[0][0] >= 3.0:
+            top_chunk_sentences = [s for score, s in chunk_evals[0][1] if score >= 3.0][:2]
             if not top_chunk_sentences and chunk_evals[0][1]:
                 top_chunk_sentences = [chunk_evals[0][1][0][1]]
             return " ".join(top_chunk_sentences)
 
-        # If the query is about non-Goa specific subjects, cleanly abstain
-        outside_indicators = ["karnataka", "france", "paris", "tokyo", "america", "delhi", "mumbai", "gearbox", "quantum"]
-        if any(oi in norm_query for oi in outside_indicators):
-            return f"I am a Goa Voice RAG assistant specialized in Goa tourism, culture, and heritage. I do not have verified records regarding '{query}' in the Goa knowledge base."
-
-        # Fallback to top sentence of the top chunk
-        for line in chunks[0].content.split("\n"):
-            if line.strip() and not line.startswith("#"):
-                return line.strip()
-
-        return chunks[0].content.strip()
+        # If query has low or no grounding match, provide a clean polite refusal rather than a random fort chunk
+        return f"I am your specialized Goa Voice AI Assistant. I don't have verified records matching '{query}' in the indexed Goa dataset. You can ask me about Goa's capital (Panaji), famous beaches (Baga, Anjuna), historic forts (Aguada, Chapora), or traditional cuisine (Fish Curry Rice, Bebinca)!"
 
 llm_service = LLMService()
 
