@@ -21,6 +21,11 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
   const [volumeLevel, setVolumeLevel] = useState(0);
   const [audioDetected, setAudioDetected] = useState(false);
 
+  // Pendulum Physics States
+  const [swayAngle, setSwayAngle] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+
   const transcriptRef = useRef('');
   const recognitionRef = useRef<any>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -28,11 +33,13 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const pcmChunksRef = useRef<Float32Array[]>([]);
   const animFrameRef = useRef<number | null>(null);
+  const physicsAnimRef = useRef<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const wasListeningRef = useRef<boolean>(false);
   const suppressClickRef = useRef<boolean>(false);
+  const startPosRef = useRef({ x: 0, y: 0 });
 
-  // Initialize Web Speech Recognition for live preview assist
+  // 1. Initialize Web Speech Recognition
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
@@ -71,7 +78,31 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
     }
   }, [language]);
 
-  // Audio capture lifecycle
+  // 2. Continuous Harmonic Pendulum Sway Physics
+  useEffect(() => {
+    let currentAngle = 0;
+
+    const updatePhysics = (timestamp: number) => {
+      if (!isDragging) {
+        if (isListening) {
+          // Subtle, steady micro-sway when recording
+          currentAngle = Math.sin(timestamp * 0.0015) * 1.5;
+        } else {
+          // Relaxed coastal breeze pendulum sway
+          currentAngle = Math.sin(timestamp * 0.0018) * 3.5;
+        }
+        setSwayAngle(currentAngle);
+      }
+      physicsAnimRef.current = requestAnimationFrame(updatePhysics);
+    };
+
+    physicsAnimRef.current = requestAnimationFrame(updatePhysics);
+    return () => {
+      if (physicsAnimRef.current) cancelAnimationFrame(physicsAnimRef.current);
+    };
+  }, [isDragging, isListening]);
+
+  // 3. Audio capture lifecycle
   useEffect(() => {
     if (isListening) {
       wasListeningRef.current = true;
@@ -92,7 +123,6 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
     }
   }, [isListening]);
 
-  // Real-time Raw 16kHz PCM Microphone Audio Capture
   const startLiveAudioStream = async () => {
     try {
       pcmChunksRef.current = [];
@@ -106,7 +136,6 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
       });
       streamRef.current = stream;
 
-      // AudioContext for Direct Raw PCM Ingestion & VU Analysis
       const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
       if (AudioCtxClass) {
         const audioCtx = new AudioCtxClass();
@@ -123,7 +152,6 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
         const source = audioCtx.createMediaStreamSource(stream);
         source.connect(analyser);
 
-        // Raw PCM Audio Buffer Processor (4096 buffer size, 1 channel)
         const processor = audioCtx.createScriptProcessor(4096, 1, 1);
         processor.onaudioprocess = (e) => {
           const inputData = e.inputBuffer.getChannelData(0);
@@ -136,7 +164,6 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
         trackMicrophoneVolume();
       }
 
-      // Start speech recognition after mic permission is established
       if (recognitionRef.current) {
         try {
           recognitionRef.current.start();
@@ -197,7 +224,6 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
       streamRef.current = null;
     }
 
-    // Convert all collected PCM chunks to a valid 16kHz mono WAV Blob
     let wavBlob: Blob | undefined;
     if (pcmChunks.length > 0) {
       const mergedSamples = mergePcmChunks(pcmChunks);
@@ -210,22 +236,22 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
     setVolumeLevel(0);
   };
 
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragY, setDragY] = useState(0);
-  const startYRef = useRef(0);
-
-  // Handle Drag Pulling
+  // 4. Drag & Physical Pendulum Interaction
   const handlePointerDown = (e: React.PointerEvent) => {
     setIsDragging(true);
-    startYRef.current = e.clientY;
+    startPosRef.current = { x: e.clientX, y: e.clientY };
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!isDragging) return;
-    const delta = e.clientY - startYRef.current;
-    // Allow pulling down between 0 and 160px
-    setDragY(Math.max(0, Math.min(160, delta)));
+    const dx = e.clientX - startPosRef.current.x;
+    const dy = Math.max(0, Math.min(100, e.clientY - startPosRef.current.y));
+    setDragOffset({ x: dx, y: dy });
+
+    // Calculate angular deflection from horizontal drag
+    const angle = Math.max(-20, Math.min(20, dx * 0.15));
+    setSwayAngle(angle);
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
@@ -235,11 +261,12 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
       (e.target as HTMLElement).releasePointerCapture(e.pointerId);
     } catch (err) {}
 
-    if (dragY > 35) {
+    // If pulled down meaningfully, toggle voice
+    if (dragOffset.y > 30 || Math.abs(dragOffset.x) > 40) {
       suppressClickRef.current = true;
       onMicClick();
     }
-    setDragY(0);
+    setDragOffset({ x: 0, y: 0 });
   };
 
   const handleMicActivate = (e: React.MouseEvent) => {
@@ -251,18 +278,18 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
     onMicClick();
   };
 
-  // Mic vertical positions
-  const baseMicY = isListening ? 180 : 70;
-  const currentMicY = isDragging ? (isListening ? 180 : 70) + dragY : baseMicY;
-  const pulseScale = isListening ? Math.min(1.12, 1 + volumeLevel * 0.3) : 1;
+  // Base hanging cable length
+  const baseCableHeight = isListening ? 160 : 75;
+  const cableHeight = isDragging ? baseCableHeight + dragOffset.y * 0.4 : baseCableHeight;
+  const pulseScale = isListening ? Math.min(1.12, 1 + volumeLevel * 0.25) : 1;
 
   return (
     <div className="fixed inset-0 pointer-events-none z-30 select-none overflow-visible">
       {/* ======================================================== */}
-      {/* 1. TOP CEILING MOUNT DISH (Centered at Top Ceiling)       */}
+      {/* 1. TOP CEILING MOUNT DISH (Anchored at Top Center)       */}
       {/* ======================================================== */}
       <div
-        style={{ left: '50%', transform: 'translateX(-50%)', top: 0, width: '140px', height: '38px' }}
+        style={{ left: '50%', transform: 'translateX(-50%)', top: 0, width: '140px', height: '36px' }}
         className="absolute z-20 pointer-events-auto flex items-center justify-center filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)]"
       >
         <img
@@ -273,24 +300,82 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
         />
       </div>
 
-      {/* ======================================================== */}
-      {/* 2. DYNAMIC STRETCHING BRAIDED CABLE (Seamlessly Plugged)  */}
-      {/* ======================================================== */}
+      {/* ========================================================================= */}
+      {/* 2. UNIFIED PENDULUM ASSEMBLY (Wire + Mic Capsule in ONE Transform Tree)  */}
+      {/* ========================================================================= */}
       <div
         style={{
+          position: 'absolute',
           left: '50%',
-          transform: 'translateX(-50%)',
-          top: '30px',
-          height: `${Math.max(0, currentMicY + 14 - 30)}px`,
-          width: '8px',
-          backgroundImage: "url('/assets/vintage_cable_tile.png')",
-          backgroundRepeat: 'repeat-y',
-          backgroundSize: '8px auto',
-          backgroundPosition: 'center top',
-          transition: isDragging ? 'none' : 'height 1400ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+          top: '30px', // Anchored right at ceiling dish collar
+          transformOrigin: '50% 0px', // PIVOTS CLEANLY FROM CEILING
+          transform: `translateX(-50%) rotate(${swayAngle}deg)`,
+          transition: isDragging ? 'none' : 'transform 700ms cubic-bezier(0.25, 1, 0.5, 1)',
         }}
-        className="absolute z-15 pointer-events-none filter drop-shadow-[2px_2px_0px_rgba(0,0,0,0.9)]"
-      />
+        className="flex flex-col items-center pointer-events-auto cursor-grab active:cursor-grabbing z-20 touch-none"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onClick={handleMicActivate}
+      >
+        {/* Pulsing Helper Prompt */}
+        {!isRevealed && !isListening && (
+          <div className="absolute -top-3 px-4 py-1.5 bg-[#FFE500] text-black font-black text-xs border-2 border-black rounded-full shadow-[4px_4px_0px_#000] whitespace-nowrap flex items-center space-x-1.5 animate-bounce font-display z-30">
+            <Sparkles className="w-3.5 h-3.5 fill-current text-black" />
+            <span>PULL OR CLICK MIC TO ENTER GOA</span>
+            <MoveDown className="w-3.5 h-3.5 stroke-[3]" />
+          </div>
+        )}
+
+        {isRevealed && !isListening && (
+          <div className="absolute -top-2 px-3.5 py-1 bg-[#00F5D4] text-black font-black text-[11px] border-2 border-black rounded-full shadow-[3px_3px_0px_#000] whitespace-nowrap flex items-center space-x-1 font-display z-30">
+            <span>PULL DOWN TO SPEAK</span>
+            <MoveDown className="w-3 h-3 stroke-[2.5]" />
+          </div>
+        )}
+
+        {/* 2A. HANGING BRAIDED CABLE */}
+        <div
+          style={{
+            width: '8px',
+            height: `${cableHeight}px`,
+            backgroundImage: "url('/assets/vintage_cable_tile.png')",
+            backgroundRepeat: 'repeat-y',
+            backgroundSize: '8px auto',
+            transition: isDragging ? 'none' : 'height 900ms cubic-bezier(0.25, 1, 0.5, 1)',
+          }}
+          className="filter drop-shadow-[2px_2px_0px_rgba(0,0,0,0.85)] pointer-events-none"
+        />
+
+        {/* 2B. MICROPHONE CAPSULE (Seamlessly locked into the cable bottom) */}
+        <div
+          style={{
+            width: '134px',
+            marginTop: '-12px', // Deep physical overlap into the top purple connector collar
+            transform: `scale(${pulseScale})`,
+            transformOrigin: '49% 12px',
+            filter: isListening
+              ? 'drop-shadow(0 0 30px #00F5D4) drop-shadow(0 0 60px rgba(0, 245, 212, 0.6)) drop-shadow(8px 8px 0px rgba(0,0,0,0.9))'
+              : 'drop-shadow(8px 8px 0px rgba(0,0,0,0.85))',
+          }}
+          className="relative group transition-all duration-300 pointer-events-auto"
+        >
+          {/* Ambient Glowing Aura when Recording */}
+          {isListening && (
+            <div
+              style={{ transform: `scale(${1.2 + volumeLevel * 1.5})` }}
+              className="absolute -inset-4 rounded-full bg-[#00F5D4]/25 blur-xl transition-transform duration-75 pointer-events-none"
+            />
+          )}
+
+          <img
+            src="/assets/vintage_mic_capsule.png"
+            alt="Vintage Studio Microphone"
+            className="w-full h-auto object-contain pointer-events-none"
+            draggable={false}
+          />
+        </div>
+      </div>
 
       {/* ======================================================== */}
       {/* 3. LIVE SPEECH BALLOON & AUDIO VU EQUALIZER              */}
@@ -300,9 +385,9 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
           style={{
             left: '50%',
             transform: 'translateX(-50%)',
-            top: `${currentMicY + 165}px`,
+            top: `${baseCableHeight + 175}px`,
           }}
-          className="absolute pointer-events-auto w-84 max-w-[92vw] p-5 bg-[#FFFDF8] text-slate-900 border-3 border-black rounded-3xl shadow-[8px_8px_0px_#000] animate-slide-up z-30"
+          className="absolute pointer-events-auto w-84 max-w-[92vw] p-5 bg-[#FFFDF8] text-slate-900 border-3 border-black rounded-3xl shadow-[8px_8px_0px_#000] animate-slide-up z-40"
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b-2 border-black pb-2 mb-2.5">
@@ -377,67 +462,6 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
           )}
         </div>
       )}
-
-      {/* ======================================================== */}
-      {/* 4. RETRO STUDIO MICROPHONE CAPSULE (Centered on Wire)     */}
-      {/* ======================================================== */}
-      <div
-        style={{
-          left: '50%',
-          transform: 'translateX(-50%)',
-          top: `${currentMicY}px`,
-          width: '134px',
-          transition: isDragging ? 'none' : 'top 1400ms cubic-bezier(0.34, 1.56, 0.64, 1)',
-        }}
-        onClick={handleMicActivate}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        className="absolute z-20 pointer-events-auto flex flex-col items-center cursor-grab active:cursor-grabbing group touch-none select-none"
-      >
-        {/* Pulsing Helper Prompt in Initial Pitch Black state */}
-        {!isRevealed && !isListening && (
-          <div className="absolute -top-12 px-4 py-1.5 bg-[#FFE500] text-black font-black text-xs border-2 border-black rounded-full shadow-[4px_4px_0px_#000] whitespace-nowrap flex items-center space-x-1.5 animate-bounce font-display z-30">
-            <Sparkles className="w-3.5 h-3.5 fill-current text-black" />
-            <span>PULL OR CLICK MIC TO ENTER GOA</span>
-            <MoveDown className="w-3.5 h-3.5 stroke-[3]" />
-          </div>
-        )}
-
-        {isRevealed && !isListening && (
-          <div className="absolute -top-10 px-3.5 py-1 bg-[#00F5D4] text-black font-black text-[11px] border-2 border-black rounded-full shadow-[3px_3px_0px_#000] whitespace-nowrap flex items-center space-x-1 font-display z-30">
-            <span>PULL DOWN TO SPEAK</span>
-            <MoveDown className="w-3 h-3 stroke-[2.5]" />
-          </div>
-        )}
-
-        {/* Microphone Body with Top Collar Anchor & Intense Listening Radiance */}
-        <div
-          className="relative w-full group-hover:scale-105 group-active:scale-95 transition-all duration-300"
-          style={{
-            transform: `scale(${pulseScale})`,
-            transformOrigin: '49% 0px',
-            filter: isListening
-              ? 'drop-shadow(0 0 30px #00F5D4) drop-shadow(0 0 60px rgba(0, 245, 212, 0.6)) drop-shadow(8px 8px 0px rgba(0,0,0,0.9))'
-              : 'drop-shadow(8px 8px 0px rgba(0,0,0,0.85))',
-          }}
-        >
-          {/* Radiant Ambient Aura when Recording (Sole light source in night) */}
-          {isListening && (
-            <div
-              style={{ transform: `scale(${1.2 + volumeLevel * 1.5})` }}
-              className="absolute -inset-4 rounded-full bg-[#00F5D4]/25 blur-xl transition-transform duration-75 pointer-events-none"
-            />
-          )}
-
-          <img
-            src="/assets/vintage_mic_capsule.png"
-            alt="Vintage Studio Microphone"
-            className="w-full h-auto object-contain pointer-events-none"
-            draggable={false}
-          />
-        </div>
-      </div>
     </div>
   );
 };
