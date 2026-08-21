@@ -16,16 +16,20 @@ class SafetyGuard:
     def __init__(self):
         # Patterns for prompt injection and harmful intents
         self.injection_patterns = [
-            r'ignore\s+all\s+previous\s+instructions',
-            r'system\s+prompt',
-            r'jailbreak',
-            r'bypass\s+(?:safety|filter|permission|security)',
-            r'drop\s+table',
-            r'sudo\s+rm'
+            r'ignore\s+(?:all\s+)?(?:previous\s+|prior\s+)?(?:instructions|rules|directives|guidelines|prompts|constraints)',
+            r'dump\s+(?:admin\s+|user\s+|all\s+|system\s+)?(?:database|db|tables|credentials|passwords|secrets|keys)',
+            r'system\s+(?:override|prompt|directive|command|admin)',
+            r'jailbreak|dan\s+mode|developer\s+mode|unaligned\s+mode|do\s+anything\s+now',
+            r'bypass\s+(?:safety|filter|permission|security|guardrail|policy|rules)',
+            r'drop\s+table|delete\s+from|insert\s+into|select\s+\*\s+from',
+            r'sudo\s+rm|rm\s+-rf|format\s+c:|del\s+/f',
+            r'admin\s+(?:access|password|credentials|privileges)',
+            r'leak\s+(?:api\s+key|token|env|secrets)',
+            r'<script|<iframe|javascript:|alert\('
         ]
         self.harmful_keywords = [
             'hack', 'exploit', 'password crack', 'steal credit', 'malware',
-            'ddos', 'kill', 'weapon', 'bomb', 'poison', 'suicide'
+            'ddos', 'kill', 'weapon', 'bomb', 'poison', 'suicide', 'contraband'
         ]
 
     def evaluate_input(self, text: str) -> GuardrailVerdict:
