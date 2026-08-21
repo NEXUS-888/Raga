@@ -41,6 +41,8 @@ def create_app() -> FastAPI:
     app.include_router(dataset_router, prefix="/api")
 
     @app.get("/api/health")
+    @app.get("/health")
+    @app.get("/healthz")
     async def health_check() -> Dict[str, Any]:
         return {
             "status": "healthy",
