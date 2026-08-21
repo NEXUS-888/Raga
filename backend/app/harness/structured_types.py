@@ -43,3 +43,4 @@ class VoiceRAGResponse(BaseModel):
     harness_trace: List[HarnessTraceStep] = Field(default_factory=list)
     strategy_used: str
     stt_provider_used: str
+    llm_provider_used: Optional[str] = "turbo_fast_synthesizer"

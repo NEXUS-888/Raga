@@ -30,10 +30,20 @@ export const FloatingOrganicAnswer: React.FC<FloatingOrganicAnswerProps> = ({
 
         <div className="flex items-center space-x-1.5 sm:space-x-2">
           <span
-            className={`sticker-badge text-[9px] sm:text-[10px] font-black font-mono-data cursor-help py-0.5 px-1.5 sm:px-2 ${response.is_refusal ? 'bg-[#FF2A55] text-white' : 'bg-[#00F5D4] text-black'}`}
-            title={`Local RAG Engine: ${((response.latency.total_retrieval_ms || 0) + (response.latency.guardrail_input_ms || 0) + (response.latency.guardrail_output_ms || 0)).toFixed(1)} ms | Full Cloud Voice: ${response.latency.total_pipeline_ms.toFixed(0)} ms`}
+            className={`sticker-badge text-[9px] sm:text-[10px] font-black font-mono-data cursor-help py-0.5 px-1.5 sm:px-2 ${
+              response.is_refusal
+                ? 'bg-[#FF2A55] text-white'
+                : response.llm_provider_used === 'groq_llm' || (response.latency.generation_ms || 0) > 40
+                ? 'bg-[#FF2A55] text-white'
+                : 'bg-[#00F5D4] text-black'
+            }`}
+            title={`Generation: ${response.llm_provider_used || 'turbo'} | Retrieval: ${response.latency.total_retrieval_ms?.toFixed(1)}ms | Generation: ${response.latency.generation_ms?.toFixed(1)}ms | Total Pipeline: ${response.latency.total_pipeline_ms?.toFixed(0)}ms`}
           >
-            {response.is_refusal ? "🛡️ 0.1 ms" : `⚡ RAG: ${((response.latency.total_retrieval_ms || 0) + (response.latency.guardrail_input_ms || 0) + (response.latency.guardrail_output_ms || 0)).toFixed(1)} ms`}
+            {response.is_refusal
+              ? "🛡️ 0.1 ms"
+              : response.llm_provider_used === 'groq_llm' || (response.latency.generation_ms || 0) > 40
+              ? `🧠 Groq Llama-3.3: ${response.latency.total_pipeline_ms?.toFixed(0)} ms`
+              : `⚡ Turbo Local: ${((response.latency.total_retrieval_ms || 0) + (response.latency.guardrail_input_ms || 0) + (response.latency.guardrail_output_ms || 0)).toFixed(1)} ms`}
           </span>
           <button
             onClick={onDismiss}

@@ -238,7 +238,8 @@ class PipelineOrchestrator:
             latency=waterfall,
             harness_trace=trace,
             strategy_used=req.chunking_strategy,
-            stt_provider_used=stt_provider_used
+            stt_provider_used=stt_provider_used,
+            llm_provider_used=gen_meta.get("provider", "turbo_fast_synthesizer") if 'gen_meta' in locals() else "turbo_fast_synthesizer"
         )
 
 orchestrator = PipelineOrchestrator()

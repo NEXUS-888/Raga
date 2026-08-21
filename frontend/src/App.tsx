@@ -27,6 +27,7 @@ export const App: React.FC = () => {
   const [isLangPickerOpen, setIsLangPickerOpen] = useState<boolean>(false);
   const [chunkingStrategy, setChunkingStrategy] = useState('recursive_hierarchical');
   const [language, setLanguage] = useState('en');
+  const [llmProvider, setLlmProvider] = useState<'auto' | 'groq' | 'turbo'>('auto');
   const [isLoading, setIsLoading] = useState(false);
   const [ragResult, setRagResult] = useState<VoiceRAGResponse | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -74,6 +75,9 @@ export const App: React.FC = () => {
         formData.append('stt_provider', 'groq');
         formData.append('language', language);
         formData.append('top_k', '3');
+        if (llmProvider !== 'auto') {
+          formData.append('llm_provider', llmProvider === 'groq' ? 'groq' : 'turbo');
+        }
 
         const res = await fetch(`${API_BASE}/api/rag/voice`, {
           method: 'POST',
@@ -112,6 +116,7 @@ export const App: React.FC = () => {
           query_text: text,
           chunking_strategy: chunkingStrategy,
           stt_provider: 'groq',
+          llm_provider: llmProvider === 'auto' ? undefined : (llmProvider === 'groq' ? 'groq' : 'turbo'),
           language: language,
           top_k: 3
         }),
@@ -389,6 +394,8 @@ export const App: React.FC = () => {
         apiBase={API_BASE}
         chunkingStrategy={chunkingStrategy}
         onSelectStrategy={(strat) => setChunkingStrategy(strat)}
+        llmProvider={llmProvider}
+        onSelectLlmProvider={(provider) => setLlmProvider(provider)}
       />
 
       {/* 7. Spoken Language Hint & Indic Auto-Detect Modal */}

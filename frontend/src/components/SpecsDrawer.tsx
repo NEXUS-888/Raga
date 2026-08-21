@@ -10,6 +10,8 @@ interface SpecsDrawerProps {
   apiBase: string;
   chunkingStrategy: string;
   onSelectStrategy: (strat: string) => void;
+  llmProvider: 'auto' | 'groq' | 'turbo';
+  onSelectLlmProvider: (provider: 'auto' | 'groq' | 'turbo') => void;
 }
 
 export const SpecsDrawer: React.FC<SpecsDrawerProps> = ({
@@ -18,6 +20,8 @@ export const SpecsDrawer: React.FC<SpecsDrawerProps> = ({
   apiBase,
   chunkingStrategy,
   onSelectStrategy,
+  llmProvider,
+  onSelectLlmProvider,
 }) => {
   const [activeTab, setActiveTab] = useState<'benchmark' | 'chunking' | 'dataset' | 'architecture'>('benchmark');
 
@@ -37,7 +41,7 @@ export const SpecsDrawer: React.FC<SpecsDrawerProps> = ({
                 HH Goa • Engineering Telemetry &amp; Specs
               </h2>
               <p className="text-xs text-white/80 font-mono-data">
-                Sub-200ms Architecture • HNSW + BM25Okapi • 4 Chunking Engines • MSMARCO-XI
+                Sub-200ms Architecture • HNSW + BM25Okapi • Groq LPU + Turbo RAG • MSMARCO-XI
               </p>
             </div>
           </div>
@@ -48,6 +52,54 @@ export const SpecsDrawer: React.FC<SpecsDrawerProps> = ({
           >
             <X className="w-5 h-5 stroke-[3]" />
           </button>
+        </div>
+
+        {/* Top Control Bar: LLM Engine Mode Selector */}
+        <div className="p-3 bg-[#0F1426] border-b-2 border-black flex flex-wrap items-center justify-between gap-2.5">
+          <div className="flex items-center space-x-2 flex-wrap gap-y-1.5">
+            <span className="text-xs font-black uppercase text-white font-display flex items-center space-x-1.5">
+              <span>🧠 Generation Engine:</span>
+            </span>
+            <div className="flex items-center p-1 bg-black rounded-xl border border-slate-700 shadow-inner">
+              <button
+                onClick={() => onSelectLlmProvider('auto')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  llmProvider === 'auto'
+                    ? 'bg-[#00F5D4] text-black shadow-[2px_2px_0px_#000]'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Smart routing: Fast local RAG for factual lookup, Groq LLM for complex synthesis"
+              >
+                🚀 Auto Gateway (Smart)
+              </button>
+              <button
+                onClick={() => onSelectLlmProvider('groq')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  llmProvider === 'groq'
+                    ? 'bg-[#FF2A55] text-white shadow-[2px_2px_0px_#000]'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Force every question through Groq Cloud Llama-3.3-70B"
+              >
+                ☁️ Groq Cloud (Llama 3.3 70B)
+              </button>
+              <button
+                onClick={() => onSelectLlmProvider('turbo')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  llmProvider === 'turbo'
+                    ? 'bg-[#FFE500] text-black shadow-[2px_2px_0px_#000]'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Force ultra-fast local in-memory RAG synthesis (<10ms)"
+              >
+                ⚡ Turbo Local (&lt;10ms)
+              </button>
+            </div>
+          </div>
+
+          <div className="text-[11px] font-mono text-slate-400">
+            Active: <span className="font-bold text-amber-300">{llmProvider === 'auto' ? 'Auto Smart Gateway' : llmProvider === 'groq' ? 'Groq Cloud (Llama 3.3)' : 'Local In-Memory RAG (<10ms)'}</span>
+          </div>
         </div>
 
         {/* Tab Navigation */}

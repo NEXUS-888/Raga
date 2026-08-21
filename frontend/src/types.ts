@@ -67,6 +67,7 @@ export interface VoiceRAGResponse {
   harness_trace: HarnessTraceStep[];
   strategy_used: string;
   stt_provider_used: string;
+  llm_provider_used?: string;
 }
 
 export interface QueryBenchmarkResult {
