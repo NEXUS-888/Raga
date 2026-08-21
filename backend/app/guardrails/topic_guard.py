@@ -81,8 +81,9 @@ class TopicGuard:
                 action="refuse"
             )
 
-        # Production Dual-Mode: If in-domain, mark as domain_rag; otherwise allow as general_knowledge
-        if matches or match_ratio > 0.05 or len(q_words) <= 3:
+        # Production Dual-Mode: If in-domain, mark as domain_rag; otherwise route to general knowledge
+        is_greeting = any(g in q_lower for g in ['hi', 'hello', 'hey', 'namaste', 'greeting', 'who are you', 'how are you', 'नमस्ते', 'हेलो', 'welcome'])
+        if matches or match_ratio > 0.05 or is_greeting:
             return GuardrailVerdict(
                 passed=True,
                 flagged=False,

@@ -32,13 +32,23 @@ class SafetyGuard:
         ]
         self.harmful_keywords = [
             'hack', 'exploit', 'password crack', 'steal credit', 'malware',
-            'ddos', 'kill', 'weapon', 'bomb', 'poison', 'suicide', 'contraband'
+            'ddos', 'kill', 'weapon', 'bomb', 'poison', 'suicide', 'contraband',
+            'drug synthesis', 'explosive device'
+        ]
+
+        # Profanity, abuse, insults, and toxic harassment patterns (English + Indic / Devanagari)
+        self.toxicity_patterns = [
+            r'\b(?:fuck(?:ing|er|ed|s)?|f\*ck|stfu|shit(?:ty)?|bullshit|bitch(?:es)?|bastard(?:s)?|asshole(?:s)?|dickhead(?:s)?|cunt(?:s)?|dick(?:s)?|pussy|slut(?:s)?|whore(?:s)?|motherfucker(?:s)?)\b',
+            r'\b(?:chutiya|madarchod|bhenchod|behenchod|bhosdike|gaand|lauda|loda|lodu|harami|kamina|randi|saala|kutta)\b',
+            r'\b(?:fuck\s+you|fuck\s+off|screw\s+you|eat\s+shit|piece\s+of\s+shit|shut\s+up|go\s+to\s+hell|kill\s+yourself|die\s+in\s+a\s+fire)\b',
+            r'\b(?:stupid|idiot|moron|dumbass|retard|scumbag)\b',
+            r'(?:चूतिया|मादरचोद|भेनचोद|भोसड़ीके|हरामी|कमीना|गांड|लौड़ा|लंड|साला|कुत्ता)'
         ]
 
     def evaluate_input(self, text: str) -> GuardrailVerdict:
         lower = text.lower().strip()
         
-        # Check prompt injection patterns
+        # 1. Check prompt injection patterns
         for pattern in self.injection_patterns:
             if re.search(pattern, lower, re.IGNORECASE):
                 return GuardrailVerdict(
@@ -49,7 +59,18 @@ class SafetyGuard:
                     action="refuse"
                 )
 
-        # Check harmful keywords
+        # 2. Check toxicity, profanity, and abusive language
+        for pattern in self.toxicity_patterns:
+            if re.search(pattern, lower, re.IGNORECASE):
+                return GuardrailVerdict(
+                    passed=False,
+                    flagged=True,
+                    score=0.98,
+                    reason="safety_violation: abusive_or_toxic_language",
+                    action="refuse"
+                )
+
+        # 3. Check harmful keywords
         for kw in self.harmful_keywords:
             if kw in lower:
                 return GuardrailVerdict(
