@@ -9,11 +9,13 @@ import { GoaBeachEnvironment } from './components/GoaBeachEnvironment';
 import { HangingMicClickStage } from './components/HangingMicClickStage';
 import { FloatingOrganicAnswer } from './components/FloatingOrganicAnswer';
 import { SpecsDrawer } from './components/SpecsDrawer';
+import { SystemEvidenceView } from './components/SystemEvidenceView';
 import type { VoiceRAGResponse } from './types';
 
 const API_BASE = "";
 
 export const App: React.FC = () => {
+  const [workspaceMode, setWorkspaceMode] = useState<'voice' | 'evidence'>('voice');
   const [isRevealed, setIsRevealed] = useState<boolean>(true);
   const [isListening, setIsListening] = useState<boolean>(false);
   const [glimmerTrigger, setGlimmerTrigger] = useState<number>(0);
@@ -140,108 +142,150 @@ export const App: React.FC = () => {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-[#05070D] font-sans select-none">
-      {/* 🌴 1. Goa Coastal & Twilight Landscape (Pure Living Vector Scene) */}
-      <GoaBeachEnvironment
-        isRevealed={isRevealed}
-        glimmerTrigger={glimmerTrigger}
-        sceneState={voiceSceneState}
-        isNight={isNight}
-      />
-
-      {/* 🎙️ 2. Hanging Studio Microphone (Interactive Click/Pull Stage) */}
-      <HangingMicClickStage
-        isRevealed={isRevealed}
-        onMicClick={handleMicClick}
-        onTranscriptReady={handleTranscriptReady}
-        isListening={isListening}
-        language={language}
-      />
-
-      {/* 🌟 3. Floating Organic Answer Card */}
-      {ragResult && (
-        <FloatingOrganicAnswer
-          response={ragResult}
-          onDismiss={() => setRagResult(null)}
-          onOpenSpecs={() => setIsSpecsOpen(true)}
-        />
-      )}
-
-      {/* 🧭 4. Top Minimalist Header Controls */}
+      {/* 🧭 Top Minimalist Header with Dual Workspace Switcher */}
       {isRevealed && (
-        <header className="fixed top-0 left-0 right-0 z-20 p-4 sm:px-8 flex items-center justify-between pointer-events-none animate-slide-up">
+        <header className="fixed top-0 left-0 right-0 z-40 p-4 sm:px-8 flex items-center justify-between pointer-events-none animate-slide-up">
+          {/* Left Brand & Lang */}
           <div className="flex items-center space-x-2 pointer-events-auto">
             <div className="px-3 py-1.5 bg-[#FF2A55] text-white border-2 border-black rounded-xl shadow-[3px_3px_0px_#000] flex items-center space-x-1.5 text-xs font-black font-display uppercase tracking-wider">
               <Palmtree className="w-4 h-4 fill-current" />
-              <span>Goa Voice RAG</span>
+              <span className="hidden sm:inline">Goa Voice RAG</span>
             </div>
 
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
-              className="bg-black text-white border-2 border-black rounded-xl px-3 py-1.5 text-xs font-bold shadow-[2px_2px_0px_#000] focus:outline-none"
+              className="bg-black text-white border-2 border-black rounded-xl px-2.5 py-1.5 text-xs font-bold shadow-[2px_2px_0px_#000] focus:outline-none"
             >
-              <option value="en">English (en-IN)</option>
-              <option value="hi">हिंदी Hindi (hi-IN)</option>
+              <option value="en">EN</option>
+              <option value="hi">हिंदी HI</option>
             </select>
           </div>
 
+          {/* Center: Dual Workspace Switcher (Voice Workspace vs System Evidence) */}
+          <div className="flex items-center p-1 bg-[#0F172A]/90 border border-slate-700/80 rounded-full shadow-2xl backdrop-blur-xl pointer-events-auto">
+            <button
+              onClick={() => setWorkspaceMode('voice')}
+              className={`px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
+                workspaceMode === 'voice'
+                  ? 'bg-[#FF2A55] text-white shadow-[2px_2px_0px_#000]'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <span>🎙️ Voice Workspace</span>
+            </button>
+
+            <button
+              onClick={() => setWorkspaceMode('evidence')}
+              className={`px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
+                workspaceMode === 'evidence'
+                  ? 'bg-[#00F5D4] text-black shadow-[2px_2px_0px_#000]'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <span>⚡ System Evidence</span>
+            </button>
+          </div>
+
+          {/* Right Specs Trigger */}
           <div className="flex items-center space-x-2 pointer-events-auto">
-            {/* Technical Specs Modal Trigger */}
             <button
               onClick={() => setIsSpecsOpen(true)}
-              className="btn-memphis px-3.5 py-1.5 rounded-xl text-xs font-black uppercase flex items-center space-x-1.5"
+              className="btn-memphis px-3 py-1.5 rounded-xl text-xs font-black uppercase flex items-center space-x-1"
             >
               <Zap className="w-3.5 h-3.5 fill-current" />
-              <span>Engine Specs 🤓</span>
+              <span className="hidden sm:inline">Specs 🤓</span>
             </button>
           </div>
         </header>
       )}
 
-      {/* 💬 5. Minimalist Bottom Input & Prompt Chips with High-Contrast Styling */}
-      {isRevealed && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 w-full max-w-2xl px-4 flex flex-col items-center space-y-3 pointer-events-auto animate-slide-up">
-          {/* Sample Chips */}
-          <div className="flex flex-wrap justify-center gap-2">
-            {sampleQuestions.slice(0, 3).map((sq, i) => (
-              <button
-                key={i}
-                onClick={() => handleTextSubmit(sq)}
-                className="px-3.5 py-1.5 bg-[#05070D]/90 backdrop-blur-md text-amber-200 border-2 border-black rounded-full text-[11px] font-bold shadow-[3px_3px_0px_#000] hover:bg-[#FF2A55] hover:text-white transition-all truncate max-w-xs cursor-pointer"
-              >
-                {sq}
-              </button>
-            ))}
-          </div>
+      {/* ========================================================================= */}
+      {/* VIEW 1: VOICE WORKSPACE (Beach Landscape & Hanging Pendulum Mic)          */}
+      {/* ========================================================================= */}
+      {workspaceMode === 'voice' && (
+        <>
+          {/* 🌴 1. Goa Coastal & Twilight Landscape (Pure Living Vector Scene) */}
+          <GoaBeachEnvironment
+            isRevealed={isRevealed}
+            glimmerTrigger={glimmerTrigger}
+            sceneState={voiceSceneState}
+            isNight={isNight}
+          />
 
-          {/* Quick Query Input Bar */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (textInput.trim()) {
-                handleTextSubmit(textInput.trim());
-                setTextInput('');
-              }
-            }}
-            className="w-full flex gap-2 bg-[#05070D]/95 backdrop-blur-xl p-1.5 rounded-3xl border-2 border-black shadow-[6px_6px_0px_#000]"
-          >
-            <input
-              type="text"
-              value={textInput}
-              onChange={(e) => setTextInput(e.target.value)}
-              placeholder="Ask anything about Goa (or click the hanging mic)..."
-              className="flex-1 bg-transparent text-white placeholder-slate-400 px-4 py-3 text-xs font-medium focus:outline-none"
-              disabled={isLoading}
+          {/* 🎙️ 2. Hanging Studio Microphone (Interactive Click/Pull Stage) */}
+          <HangingMicClickStage
+            isRevealed={isRevealed}
+            onMicClick={handleMicClick}
+            onTranscriptReady={handleTranscriptReady}
+            isListening={isListening}
+            language={language}
+          />
+
+          {/* 🌟 3. Floating Organic Answer Card */}
+          {ragResult && (
+            <FloatingOrganicAnswer
+              response={ragResult}
+              onDismiss={() => setRagResult(null)}
+              onOpenSpecs={() => setIsSpecsOpen(true)}
             />
-            <button
-              type="submit"
-              disabled={isLoading || !textInput.trim()}
-              className="px-6 py-3 bg-[#FF2A55] hover:bg-[#E6194B] text-white font-black text-xs uppercase tracking-wider border-2 border-black rounded-2xl shadow-[3px_3px_0px_#000] hover:shadow-[4px_4px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center space-x-1.5 disabled:opacity-40 cursor-pointer"
-            >
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              <span>Ask</span>
-            </button>
-          </form>
+          )}
+
+          {/* 💬 4. Minimalist Bottom Input & Prompt Chips with High-Contrast Styling */}
+          {isRevealed && (
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 w-full max-w-2xl px-4 flex flex-col items-center space-y-3 pointer-events-auto animate-slide-up">
+              {/* Sample Chips */}
+              <div className="flex flex-wrap justify-center gap-2">
+                {sampleQuestions.slice(0, 3).map((sq, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleTextSubmit(sq)}
+                    className="px-3.5 py-1.5 bg-[#05070D]/90 backdrop-blur-md text-amber-200 border-2 border-black rounded-full text-[11px] font-bold shadow-[3px_3px_0px_#000] hover:bg-[#FF2A55] hover:text-white transition-all truncate max-w-xs cursor-pointer"
+                  >
+                    {sq}
+                  </button>
+                ))}
+              </div>
+
+              {/* Quick Query Input Bar */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (textInput.trim()) {
+                    handleTextSubmit(textInput.trim());
+                    setTextInput('');
+                  }
+                }}
+                className="w-full flex gap-2 bg-[#05070D]/95 backdrop-blur-xl p-1.5 rounded-3xl border-2 border-black shadow-[6px_6px_0px_#000]"
+              >
+                <input
+                  type="text"
+                  value={textInput}
+                  onChange={(e) => setTextInput(e.target.value)}
+                  placeholder="Ask anything about Goa (or click the hanging mic)..."
+                  className="flex-1 bg-transparent text-white placeholder-slate-400 px-4 py-3 text-xs font-medium focus:outline-none"
+                  disabled={isLoading}
+                />
+                <button
+                  type="submit"
+                  disabled={isLoading || !textInput.trim()}
+                  className="px-6 py-3 bg-[#FF2A55] hover:bg-[#E6194B] text-white font-black text-xs uppercase tracking-wider border-2 border-black rounded-2xl shadow-[3px_3px_0px_#000] hover:shadow-[4px_4px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center space-x-1.5 disabled:opacity-40 cursor-pointer"
+                >
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  <span>Ask</span>
+                </button>
+              </form>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ========================================================================= */}
+      {/* VIEW 2: SYSTEM EVIDENCE & VERIFICATION DASHBOARD                          */}
+      {/* ========================================================================= */}
+      {workspaceMode === 'evidence' && (
+        <div className="pt-20 pb-16 min-h-screen bg-[#070A12] overflow-y-auto">
+          <SystemEvidenceView apiBase={API_BASE} />
         </div>
       )}
 
