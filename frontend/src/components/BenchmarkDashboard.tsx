@@ -14,34 +14,54 @@ export const BenchmarkDashboard: React.FC<BenchmarkDashboardProps> = ({ apiBase 
   const [isLoading, setIsLoading] = useState(false);
   const [strategy, setStrategy] = useState("recursive_hierarchical");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const runBenchmark = async () => {
     setIsLoading(true);
-    try {
-      const res = await fetch(`${apiBase}/api/benchmark/run`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          num_iterations: 1,
-          chunking_strategy: strategy
-        })
-      });
-      const data: BenchmarkSummary = await res.json();
-      setSummary(data);
+    setErrorMsg(null);
 
-      if (data.target_met_percentage >= 90) {
-        confetti({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#FF2A55', '#FFE500', '#00F5D4']
+    const endpoints = [
+      apiBase ? `${apiBase}/api/benchmark/run` : '',
+      '/api/benchmark/run',
+      'http://127.0.0.1:8000/api/benchmark/run',
+      'http://localhost:8000/api/benchmark/run'
+    ].filter(Boolean);
+
+    let success = false;
+    for (const url of endpoints) {
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            num_iterations: 1,
+            chunking_strategy: strategy
+          })
         });
+        if (res.ok) {
+          const data: BenchmarkSummary = await res.json();
+          setSummary(data);
+          success = true;
+
+          if (data.target_met_percentage >= 90) {
+            confetti({
+              particleCount: 80,
+              spread: 70,
+              origin: { y: 0.6 },
+              colors: ['#FF2A55', '#FFE500', '#00F5D4']
+            });
+          }
+          break;
+        }
+      } catch (e) {
+        // try next endpoint in list
       }
-    } catch (e) {
-      console.error("Benchmark run failed", e);
-    } finally {
-      setIsLoading(false);
     }
+
+    if (!success) {
+      setErrorMsg("Unable to reach FastAPI backend on http://127.0.0.1:8000. Ensure the backend server is running.");
+    }
+    setIsLoading(false);
   };
 
   const chartData = summary ? [
@@ -137,6 +157,22 @@ export const BenchmarkDashboard: React.FC<BenchmarkDashboardProps> = ({ apiBase 
           )}
         </div>
       </div>
+
+      {/* Error Banner */}
+      {errorMsg && (
+        <div className="p-4 bg-[#FF2A55]/20 border-2 border-[#FF2A55] rounded-xl text-white flex items-center justify-between font-mono-data text-xs shadow-[4px_4px_0px_#000]">
+          <div className="flex items-center space-x-2">
+            <span className="p-1 rounded bg-[#FF2A55] text-black font-black">!</span>
+            <span>{errorMsg}</span>
+          </div>
+          <button
+            onClick={runBenchmark}
+            className="px-3 py-1 bg-[#FFE500] text-black font-black rounded-lg border border-black hover:bg-[#00F5D4]"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* Summary KPI Readouts */}
       {summary ? (
