@@ -129,9 +129,8 @@ class LLMService:
         
         # Priority order of active models on Groq
         candidate_models = [
-            "allam-2-7b",
-            "openai/gpt-oss-20b",
             "openai/gpt-oss-120b",
+            "openai/gpt-oss-20b",
             settings.llm_model,
         ]
         # Deduplicate while preserving order
@@ -148,9 +147,9 @@ class LLMService:
                         {"role": "user", "content": user_prompt}
                     ],
                     "temperature": 0.1,
-                    "max_tokens": 200
+                    "max_tokens": 500
                 }
-                async with httpx.AsyncClient(timeout=4.0) as client:
+                async with httpx.AsyncClient(timeout=6.0) as client:
                     resp = await client.post(self.groq_url, headers=headers, json=payload)
                     if resp.status_code != 200:
                         continue
@@ -159,7 +158,10 @@ class LLMService:
                     # Clean thinking tokens if present
                     if "</think>" in raw_answer:
                         raw_answer = raw_answer.split("</think>")[-1].strip()
-                    if raw_answer:
+                    elif "<think>" in raw_answer:
+                        # Unclosed think block - remove leading tag
+                        raw_answer = raw_answer.replace("<think>", "").strip()
+                    if raw_answer and len(raw_answer) > 10:
                         return raw_answer, {"model_used": model_name, "usage": data.get("usage", {})}
             except Exception as err:
                 last_error = err
@@ -196,15 +198,18 @@ class LLMService:
         if not chunks:
             return "I am unable to answer this question because no relevant context was found in the indexed MSMARCO-XI dataset."
 
-        # Normalize unicode accents and special chars (e.g., Góa -> Goa, what's -> whats)
-        norm_query = unicodedata.normalize('NFKD', query).encode('ASCII', 'ignore').decode('utf-8').lower().strip()
+        # Normalize accents without stripping non-ASCII Indic Unicode scripts
+        norm_query = unicodedata.normalize('NFC', query).lower().strip()
+        accent_map = {'ó': 'o', 'ã': 'a', 'ç': 'c', 'é': 'e', 'á': 'a', 'í': 'i', 'ú': 'u'}
+        for k, v in accent_map.items():
+            norm_query = norm_query.replace(k, v)
 
         # 1. Gracefully handle conversational greetings and self-intro queries
-        greetings = ["hello", "hi", "hey", "namaste", "good morning", "good evening", "how are you", "who are you", "what can you do"]
-        if any(norm_query.startswith(g) or g in norm_query for g in greetings) and not any(k in norm_query for k in ["beach", "capital", "food", "fort", "dish", "curry", "feni", "waterfall", "monsoon"]):
-            if "how are you" in norm_query:
+        greetings = ["hello", "hi", "hey", "namaste", "good morning", "good evening", "how are you", "who are you", "what can you do", "नमस्ते", "हेलो", "आप कौन हैं"]
+        if any(norm_query.startswith(g) or g in norm_query for g in greetings) and not any(k in norm_query for k in ["beach", "capital", "food", "fort", "dish", "curry", "feni", "waterfall", "monsoon", "खाना", "व्यंजन", "भोजन", "राजधानी", "तट"]):
+            if "how are you" in norm_query or "आप कैसे" in norm_query:
                 return "Hello! I am doing great and ready to assist you. I am your specialized Goa Voice AI Assistant—ask me anything about Goa's beaches, capital, traditional food, or heritage!"
-            elif "who are you" in norm_query or "what can you do" in norm_query:
+            elif "who are you" in norm_query or "what can you do" in norm_query or "आप कौन" in norm_query:
                 return "I am the Goa Voice RAG Assistant, designed for sub-200ms voice interactions. I can answer questions about Goa's capital (Panaji), official languages (Konkani/Marathi), famous cuisine (Fish Curry Rice, Bebinca, Feni), beaches, and historic forts!"
             else:
                 return "Hello! Welcome to the Goa Voice RAG assistant. How can I help you explore Goa's rich culture, capital, beaches, or cuisine today?"
@@ -213,45 +218,55 @@ class LLMService:
         outside_entities = [
             "karnataka", "kerala", "maharashtra", "delhi", "mumbai", "bangalore", "bengaluru", "tamil nadu",
             "france", "paris", "japan", "tokyo", "china", "usa", "america", "london", "uk", "germany",
-            "tesla", "spacex", "elon musk", "microsoft", "google", "apple", "amazon"
+            "tesla", "spacex", "elon musk", "microsoft", "google", "apple", "amazon", "कर्नाटक", "दिल्ली", "मुंबई"
         ]
-        if any(e in norm_query for e in outside_entities) and not any(g in norm_query for g in ["goa", "goan", "panaji", "konkani"]):
+        if any(e in norm_query for e in outside_entities) and not any(g in norm_query for g in ["goa", "goan", "panaji", "konkani", "गोवा", "पणजी", "कोंकणी"]):
             return f"I am a Goa Voice RAG assistant specialized in Goa tourism, culture, and heritage. I do not have verified records regarding '{query}' in the Goa knowledge base."
 
         stop_words = {
             "what", "is", "are", "the", "a", "an", "and", "or", "in", "on", "at", "to", "for", "of",
             "with", "how", "who", "which", "where", "when", "why", "about", "tell", "me", "what's",
-            "whats", "best", "eat", "good", "some", "can", "you", "please", "i", "want", "know"
+            "whats", "best", "eat", "good", "some", "can", "you", "please", "i", "want", "know",
+            "का", "की", "के", "में", "से", "को", "पर", "है", "हैं", "था", "थी", "थे", "और", "या", "क्या", "कहाँ", "कौन", "कैसे", "बताओ", "बताएं", "बारे", "बता", "रहे", "बढ़िया", "अच्छा", "सबसे"
         }
         
         query_words = [w.strip("?,!.'\"") for w in norm_query.split() if w.strip("?,!.'\"") not in stop_words and len(w.strip("?,!.'\"")) > 1]
         if not query_words:
             query_words = [w for w in norm_query.split() if len(w) > 1]
 
-        # Domain synonym expansions
+        # Domain synonym expansions (English + Indic / Devanagari)
         synonyms = {
-            "places": ["baga", "calangute", "anjuna", "palolem", "colva", "aguada", "chapora", "bom jesus", "dudhsagar", "beach", "fort", "church", "tourism", "attractions", "places", "visit"],
-            "place": ["baga", "calangute", "anjuna", "palolem", "colva", "aguada", "chapora", "bom jesus", "dudhsagar", "beach", "fort", "church", "tourism", "attractions", "places", "visit"],
-            "visit": ["baga", "calangute", "anjuna", "palolem", "colva", "aguada", "chapora", "bom jesus", "dudhsagar", "beach", "fort", "church", "tourism", "attractions", "places", "visit"],
-            "tourism": ["tourism", "tourist", "travel", "attractions", "places", "visit", "baga", "calangute", "aguada", "bom jesus"],
-            "travel": ["tourism", "tourist", "travel", "attractions", "places", "visit", "baga", "calangute", "aguada", "bom jesus"],
-            "food": ["curry", "rice", "dish", "dishes", "cuisine", "vindaloo", "xacuti", "bebinca", "cafreal", "balchao", "poi", "feni", "food"],
-            "eat": ["curry", "rice", "dish", "dishes", "cuisine", "vindaloo", "xacuti", "bebinca", "cafreal", "balchao", "food"],
-            "dish": ["curry", "rice", "dish", "dishes", "cuisine", "vindaloo", "xacuti", "bebinca", "cafreal", "balchao", "food"],
-            "beach": ["baga", "calangute", "anjuna", "palolem", "colva", "vagator", "arambol", "coast", "beach", "beaches"],
-            "beaches": ["baga", "calangute", "anjuna", "palolem", "colva", "vagator", "arambol", "coast", "beach", "beaches"],
-            "fort": ["aguada", "chapora", "reis magos", "fort", "forts", "lighthouse"],
-            "forts": ["aguada", "chapora", "reis magos", "fort", "forts", "lighthouse"],
-            "church": ["church", "basilica", "bom jesus", "se cathedral", "xavier", "unesco"],
-            "churches": ["church", "basilica", "bom jesus", "se cathedral", "xavier", "unesco"],
-            "capital": ["panaji", "panjim", "vasco", "capital"],
-            "waterfall": ["dudhsagar", "mandovi", "waterfall", "falls"],
-            "drink": ["feni", "sol kadi", "cashew", "beverage", "drink"]
+            "places": ["baga", "calangute", "anjuna", "palolem", "colva", "aguada", "chapora", "bom jesus", "dudhsagar", "beach", "fort", "church", "tourism", "attractions", "places", "visit", "घूमने", "जगह", "पर्यटन"],
+            "place": ["baga", "calangute", "anjuna", "palolem", "colva", "aguada", "chapora", "bom jesus", "dudhsagar", "beach", "fort", "church", "tourism", "attractions", "places", "visit", "घूमने", "जगह", "पर्यटन"],
+            "visit": ["baga", "calangute", "anjuna", "palolem", "colva", "aguada", "chapora", "bom jesus", "dudhsagar", "beach", "fort", "church", "tourism", "attractions", "places", "visit", "घूमने", "जगह", "पर्यटन"],
+            "tourism": ["tourism", "tourist", "travel", "attractions", "places", "visit", "baga", "calangute", "aguada", "bom jesus", "पर्यटन", "घूमने"],
+            "travel": ["tourism", "tourist", "travel", "attractions", "places", "visit", "baga", "calangute", "aguada", "bom jesus", "पर्यटन", "यात्रा"],
+            "food": ["curry", "rice", "dish", "dishes", "cuisine", "vindaloo", "xacuti", "bebinca", "cafreal", "balchao", "poi", "feni", "food", "फिश करी", "जाकुती", "विंदालू", "बेबिंका", "फेनी", "बालचाओ", "व्यंजन", "भोजन", "खाना"],
+            "eat": ["curry", "rice", "dish", "dishes", "cuisine", "vindaloo", "xacuti", "bebinca", "cafreal", "balchao", "food", "फिश करी", "जाकुती", "विंदालू", "बेबिंका", "फेनी", "व्यंजन", "भोजन", "खाना"],
+            "dish": ["curry", "rice", "dish", "dishes", "cuisine", "vindaloo", "xacuti", "bebinca", "cafreal", "balchao", "food", "फिश करी", "जाकुती", "विंदालू", "बेबिंका", "फेनी", "व्यंजन", "भोजन"],
+            "खाना": ["फिश करी", "fish curry", "जाकुती", "xacuti", "विंदालू", "vindaloo", "बेबिंका", "bebinca", "फेनी", "feni", "बालचाओ", "व्यंजन", "भोजन", "खाना", "खान-पान"],
+            "खाने": ["फिश करी", "fish curry", "जाकुती", "xacuti", "विंदालू", "vindaloo", "बेबिंका", "bebinca", "फेनी", "feni", "बालचाओ", "व्यंजन", "भोजन", "खाना", "खान-पान"],
+            "काने": ["फिश करी", "fish curry", "जाकुती", "xacuti", "विंदालू", "vindaloo", "बेबिंका", "bebinca", "फेनी", "feni", "बालचाओ", "व्यंजन", "भोजन", "खाना", "खान-पान"],
+            "व्यंजन": ["फिश करी", "fish curry", "जाकुती", "xacuti", "विंदालू", "vindaloo", "बेबिंका", "bebinca", "फेनी", "feni", "बालचाओ", "व्यंजन", "भोजन", "खाना"],
+            "भोजन": ["फिश करी", "fish curry", "जाकुती", "xacuti", "विंदालू", "vindaloo", "बेबिंका", "bebinca", "फेनी", "feni", "बालचाओ", "व्यंजन", "भोजन", "खाना"],
+            "beach": ["baga", "calangute", "anjuna", "palolem", "colva", "vagator", "arambol", "coast", "beach", "beaches", "समुद्र तट", "बीच"],
+            "beaches": ["baga", "calangute", "anjuna", "palolem", "colva", "vagator", "arambol", "coast", "beach", "beaches", "समुद्र तट", "बीच"],
+            "fort": ["aguada", "chapora", "reis magos", "fort", "forts", "lighthouse", "किला", "किले"],
+            "forts": ["aguada", "chapora", "reis magos", "fort", "forts", "lighthouse", "किला", "किले"],
+            "church": ["church", "basilica", "bom jesus", "se cathedral", "xavier", "unesco", "चर्च", "कैथेड्रल"],
+            "churches": ["church", "basilica", "bom jesus", "se cathedral", "xavier", "unesco", "चर्च", "कैथेड्रल"],
+            "capital": ["panaji", "panjim", "vasco", "capital", "पणजी", "राजधानी"],
+            "राजधानी": ["पणजी", "panaji", "panjim", "राजधानी"],
+            "भाषा": ["कोंकणी", "मराठी", "konkani", "marathi", "भाषा"],
+            "waterfall": ["dudhsagar", "mandovi", "waterfall", "falls", "दूधसागर", "झरना"],
+            "drink": ["feni", "sol kadi", "cashew", "beverage", "drink", "फेनी", "सोल कढ़ी"]
         }
 
         chunk_evals = []
         for chunk in chunks:
-            c_norm = unicodedata.normalize('NFKD', chunk.content).encode('ASCII', 'ignore').decode('utf-8')
+            c_norm = unicodedata.normalize('NFC', chunk.content)
+            for k, v in accent_map.items():
+                c_norm = c_norm.replace(k, v)
             c_score = 0.0
             c_sentences = []
             for line in c_norm.split("\n"):
