@@ -140,7 +140,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-[#05070D] font-sans select-none">
-      {/* 🌴 1. Goa Coastal & Twilight Landscape (Living Animated Environment) */}
+      {/* 🌴 1. Goa Coastal & Twilight Landscape (Pure Living Vector Scene) */}
       <GoaBeachEnvironment
         isRevealed={isRevealed}
         glimmerTrigger={glimmerTrigger}
@@ -148,7 +148,7 @@ export const App: React.FC = () => {
         isNight={isNight}
       />
 
-      {/* 🎙️ 2. Hanging Studio Microphone (Positioned in highlighted upper-right/center) */}
+      {/* 🎙️ 2. Hanging Studio Microphone (Interactive Click/Pull Stage) */}
       <HangingMicClickStage
         isRevealed={isRevealed}
         onMicClick={handleMicClick}
@@ -157,7 +157,7 @@ export const App: React.FC = () => {
         language={language}
       />
 
-      {/* 🌟 3. Floating Organic Answer Card (Appears dynamically in open space) */}
+      {/* 🌟 3. Floating Organic Answer Card */}
       {ragResult && (
         <FloatingOrganicAnswer
           response={ragResult}
@@ -166,13 +166,13 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 4. Top Minimalist Header Controls (Revealed after click) */}
+      {/* 🧭 4. Top Minimalist Header Controls */}
       {isRevealed && (
         <header className="fixed top-0 left-0 right-0 z-20 p-4 sm:px-8 flex items-center justify-between pointer-events-none animate-slide-up">
           <div className="flex items-center space-x-2 pointer-events-auto">
             <div className="px-3 py-1.5 bg-[#FF2A55] text-white border-2 border-black rounded-xl shadow-[3px_3px_0px_#000] flex items-center space-x-1.5 text-xs font-black font-display uppercase tracking-wider">
               <Palmtree className="w-4 h-4 fill-current" />
-              <span>Goa Voice AI</span>
+              <span>Goa Voice RAG</span>
             </div>
 
             <select
@@ -198,7 +198,7 @@ export const App: React.FC = () => {
         </header>
       )}
 
-      {/* 5. Minimalist Bottom Input & Prompt Chips */}
+      {/* 💬 5. Minimalist Bottom Input & Prompt Chips */}
       {isRevealed && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 w-full max-w-2xl px-4 flex flex-col items-center space-y-3 pointer-events-auto animate-slide-up">
           {/* Sample Chips */}
