@@ -14,7 +14,7 @@ import { SystemEvidenceView } from './components/SystemEvidenceView';
 import { LanguagePickerModal, SUPPORTED_LANGUAGES } from './components/LanguagePickerModal';
 import type { VoiceRAGResponse } from './types';
 
-const API_BASE = "";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
 export const App: React.FC = () => {
   const [workspaceMode, setWorkspaceMode] = useState<'voice' | 'evidence'>('voice');
