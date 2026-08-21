@@ -198,7 +198,7 @@ export const App: React.FC = () => {
         </header>
       )}
 
-      {/* 💬 5. Minimalist Bottom Input & Prompt Chips */}
+      {/* 💬 5. Minimalist Bottom Input & Prompt Chips with High-Contrast Styling */}
       {isRevealed && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 w-full max-w-2xl px-4 flex flex-col items-center space-y-3 pointer-events-auto animate-slide-up">
           {/* Sample Chips */}
@@ -207,7 +207,7 @@ export const App: React.FC = () => {
               <button
                 key={i}
                 onClick={() => handleTextSubmit(sq)}
-                className="px-3 py-1 bg-[#FFFDF8] text-slate-900 border-2 border-black rounded-full text-[11px] font-bold shadow-[2px_2px_0px_#000] hover:bg-[#FFE500] transition-colors truncate max-w-xs"
+                className="px-3.5 py-1.5 bg-[#05070D]/90 backdrop-blur-md text-amber-200 border-2 border-black rounded-full text-[11px] font-bold shadow-[3px_3px_0px_#000] hover:bg-[#FF2A55] hover:text-white transition-all truncate max-w-xs cursor-pointer"
               >
                 {sq}
               </button>
@@ -223,20 +223,20 @@ export const App: React.FC = () => {
                 setTextInput('');
               }
             }}
-            className="w-full flex gap-2"
+            className="w-full flex gap-2 bg-[#05070D]/95 backdrop-blur-xl p-1.5 rounded-3xl border-2 border-black shadow-[6px_6px_0px_#000]"
           >
             <input
               type="text"
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
               placeholder="Ask anything about Goa (or click the hanging mic)..."
-              className="flex-1 bg-black/80 text-white placeholder-slate-400 border-2 border-black rounded-2xl px-4 py-3 text-xs font-medium focus:outline-none focus:border-[#FFE500] shadow-[4px_4px_0px_#000]"
+              className="flex-1 bg-transparent text-white placeholder-slate-400 px-4 py-3 text-xs font-medium focus:outline-none"
               disabled={isLoading}
             />
             <button
               type="submit"
               disabled={isLoading || !textInput.trim()}
-              className="btn-memphis px-5 py-3 rounded-2xl text-xs font-black uppercase flex items-center space-x-1.5 disabled:opacity-40"
+              className="px-6 py-3 bg-[#FF2A55] hover:bg-[#E6194B] text-white font-black text-xs uppercase tracking-wider border-2 border-black rounded-2xl shadow-[3px_3px_0px_#000] hover:shadow-[4px_4px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center space-x-1.5 disabled:opacity-40 cursor-pointer"
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               <span>Ask</span>
