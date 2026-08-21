@@ -112,63 +112,18 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
   }, [isListening]);
 
   const startLiveAudioStream = async () => {
+    pcmChunksRef.current = [];
+    transcriptRef.current = '';
+    setLiveTranscript('');
+    setAudioDetected(false);
+
+    // 1. Microphone stream for PCM audio & volume meter
     try {
-      pcmChunksRef.current = [];
-      transcriptRef.current = '';
-      setLiveTranscript('');
-      setAudioDetected(false);
-
-      // 1. Initialize Web Speech Recognition fresh on every recording
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        try {
-          if (recognitionRef.current) {
-            try { recognitionRef.current.abort(); } catch (e) {}
-          }
-
-          const recognizer = new SpeechRecognition();
-          recognizer.continuous = true;
-          recognizer.interimResults = true;
-          recognizer.maxAlternatives = 1;
-          recognizer.lang = SPEECH_LANG_MAP[language] || 'en-IN';
-
-          recognizer.onresult = (event: any) => {
-            let fullText = '';
-            for (let i = 0; i < event.results.length; i++) {
-              fullText += event.results[i][0].transcript + ' ';
-            }
-            const clean = fullText.trim();
-            if (clean) {
-              transcriptRef.current = clean;
-              setLiveTranscript(clean);
-              setAudioDetected(true);
-            }
-          };
-
-          recognizer.onerror = (e: any) => {
-            console.warn("Speech recognition notice:", e?.error || e);
-          };
-
-          recognizer.onend = () => {
-            if (wasListeningRef.current) {
-              try { recognizer.start(); } catch (e) {}
-            }
-          };
-
-          recognizer.start();
-          recognitionRef.current = recognizer;
-        } catch (err) {
-          console.warn("Speech recognition start notice:", err);
-        }
-      }
-
-      // 2. Microphone stream for PCM audio & volume meter
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          channelCount: 1,
         },
       });
       streamRef.current = stream;
@@ -202,6 +157,60 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
       }
     } catch (err) {
       console.warn("Microphone access notice:", err);
+    }
+
+    // 2. Initialize Web Speech Recognition
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      try {
+        if (recognitionRef.current) {
+          try { recognitionRef.current.abort(); } catch (e) {}
+        }
+
+        const recognizer = new SpeechRecognition();
+        recognizer.continuous = true;
+        recognizer.interimResults = true;
+        recognizer.maxAlternatives = 1;
+        
+        let targetLang = SPEECH_LANG_MAP[language];
+        if (!targetLang || language === 'auto') {
+          targetLang = navigator.language || 'en-IN';
+        }
+        recognizer.lang = targetLang;
+
+        recognizer.onresult = (event: any) => {
+          let interimText = '';
+          let finalText = '';
+          for (let i = 0; i < event.results.length; i++) {
+            if (event.results[i].isFinal) {
+              finalText += event.results[i][0].transcript + ' ';
+            } else {
+              interimText += event.results[i][0].transcript + ' ';
+            }
+          }
+          const currentText = (finalText + interimText).trim();
+          if (currentText) {
+            transcriptRef.current = currentText;
+            setLiveTranscript(currentText);
+            setAudioDetected(true);
+          }
+        };
+
+        recognizer.onerror = (e: any) => {
+          console.warn("Speech recognition notice:", e?.error || e);
+        };
+
+        recognizer.onend = () => {
+          if (wasListeningRef.current) {
+            try { recognizer.start(); } catch (e) {}
+          }
+        };
+
+        recognizer.start();
+        recognitionRef.current = recognizer;
+      } catch (err) {
+        console.warn("Speech recognition start notice:", err);
+      }
     }
   };
 

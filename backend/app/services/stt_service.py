@@ -154,12 +154,33 @@ class SpeechToTextService:
             "temperature": "0.0",
             "response_format": "json"
         }
-        if "hi" in language_code.lower():
-            data["language"] = "hi"
-            data["prompt"] = "गोवा, पर्यटन, पणजी, कलंगूट, भोजन, संस्कृति, समुद्र तट, मौसम, इतिहास, यात्रा"
+        # If specific language is requested, set it; otherwise leave empty for Whisper Auto-Detection!
+        if language_code and language_code.lower() != "auto":
+            if "hi" in language_code.lower():
+                data["language"] = "hi"
+                data["prompt"] = "गोवा, पर्यटन, पणजी, कलंगूट, भोजन, संस्कृति, समुद्र तट, मौसम, इतिहास, यात्रा"
+            elif "mr" in language_code.lower():
+                data["language"] = "mr"
+            elif "bn" in language_code.lower():
+                data["language"] = "bn"
+            elif "ta" in language_code.lower():
+                data["language"] = "ta"
+            elif "te" in language_code.lower():
+                data["language"] = "te"
+            elif "gu" in language_code.lower():
+                data["language"] = "gu"
+            elif "kn" in language_code.lower():
+                data["language"] = "kn"
+            elif "ml" in language_code.lower():
+                data["language"] = "ml"
+            elif "pa" in language_code.lower():
+                data["language"] = "pa"
+            else:
+                data["language"] = "en"
+                data["prompt"] = "Goa tourism, travel, food, beaches, Panaji, Calangute, heritage, culture, churches, seafood, sightseeing, weather"
         else:
-            data["language"] = "en"
-            data["prompt"] = "Goa tourism, travel, food, beaches, Panaji, Calangute, heritage, culture, churches, seafood, sightseeing, weather"
+            # Whisper Auto-Detection prompt covering Indian multilingual terminology
+            data["prompt"] = "Goa tourism, travel, beaches, Panaji, Goa food, गोवा, पणजी, संस्कृति"
 
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.post(self.groq_whisper_endpoint, headers=headers, data=data, files=files)
@@ -173,6 +194,8 @@ class SpeechToTextService:
             "api-subscription-key": settings.sarvam_api_key
         }
         sarvam_lang = "hi-IN" if "hi" in language_code.lower() else "en-IN"
+        if language_code.lower() == "auto":
+            sarvam_lang = "unknown"
         files = {
             "file": (filename if filename.endswith(('.wav', '.mp3', '.m4a', '.webm')) else "audio.wav", audio_bytes, "audio/wav")
         }
