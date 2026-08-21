@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, MoveDown, Square, Volume2, Mic, ArrowRight } from 'lucide-react';
 import { pcmToWavBlob, mergePcmChunks, resamplePcm } from '../utils/audioWavEncoder';
+import { SUPPORTED_LANGUAGES } from './LanguagePickerModal';
 
 interface HangingMicClickStageProps {
   isRevealed: boolean;
@@ -9,6 +10,25 @@ interface HangingMicClickStageProps {
   isListening: boolean;
   language?: string;
 }
+
+const SPEECH_LANG_MAP: Record<string, string> = {
+  'auto': 'en-IN',
+  'hi': 'hi-IN',
+  'hinglish': 'hi-IN',
+  'en': 'en-IN',
+  'kok': 'kok-IN',
+  'mr': 'mr-IN',
+  'bn': 'bn-IN',
+  'ta': 'ta-IN',
+  'te': 'te-IN',
+  'gu': 'gu-IN',
+  'kn': 'kn-IN',
+  'ml': 'ml-IN',
+  'pa': 'pa-IN',
+  'or': 'or-IN',
+  'as': 'as-IN',
+  'ne': 'ne-NP',
+};
 
 export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
   isRevealed,
@@ -47,7 +67,7 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
         const recognizer = new SpeechRecognition();
         recognizer.continuous = true;
         recognizer.interimResults = true;
-        recognizer.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
+        recognizer.lang = SPEECH_LANG_MAP[language] || 'en-IN';
 
         recognizer.onresult = (event: any) => {
           let fullText = '';
@@ -74,7 +94,7 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
 
   useEffect(() => {
     if (recognitionRef.current) {
-      recognitionRef.current.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
+      recognitionRef.current.lang = SPEECH_LANG_MAP[language] || 'en-IN';
     }
   }, [language]);
 
@@ -387,79 +407,90 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
             transform: 'translateX(-50%)',
             top: `${baseCableHeight + 175}px`,
           }}
-          className="absolute pointer-events-auto w-84 max-w-[92vw] p-5 bg-[#FFFDF8] text-slate-900 border-3 border-black rounded-3xl shadow-[8px_8px_0px_#000] animate-slide-up z-40"
+          className="absolute pointer-events-auto w-full max-w-lg px-4 sm:px-0 z-40 animate-slide-up"
         >
-          {/* Header */}
-          <div className="flex items-center justify-between border-b-2 border-black pb-2 mb-2.5">
-            <div className="flex items-center space-x-2">
-              <span className="p-1 rounded-lg bg-[#FF2A55] text-white border border-black">
-                <Mic className="w-3.5 h-3.5 fill-current" />
-              </span>
-              <span className="text-xs font-black uppercase text-[#FF2A55] font-display tracking-wide">
-                Live Voice Stream
-              </span>
-            </div>
-
-            <button
-              onClick={onMicClick}
-              className="px-3 py-1 rounded-lg bg-[#00F5D4] text-black text-xs font-black border-2 border-black shadow-[2px_2px_0px_#000] flex items-center space-x-1 hover:bg-[#FFE500] cursor-pointer"
-            >
-              <Square className="w-3 h-3 fill-current" />
-              <span>Done Speaking</span>
-            </button>
-          </div>
-
-          {/* Real-Time Live Transcribed Text */}
-          <div className="p-3 bg-black/5 rounded-xl border border-black/20 min-h-[44px]">
-            <p className="text-xs font-bold text-slate-900 leading-relaxed font-sans">
-              {liveTranscript || (
-                <span className="text-slate-400 font-medium italic">
-                  🎙️ Speak your question now into your microphone... (English or Hindi)
+          <div className="p-5 sm:p-6 bg-[#FFFDF8] text-slate-900 border-3 border-black rounded-3xl shadow-[8px_8px_0px_#000]">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b-2 border-black pb-2.5 mb-3">
+              <div className="flex items-center space-x-2">
+                <span className="p-1.5 rounded-lg bg-[#FF2A55] text-white border border-black animate-pulse">
+                  <Mic className="w-4 h-4 fill-current" />
                 </span>
-              )}
-            </p>
-          </div>
-
-          {/* Real-time Audio VU Meter */}
-          <div className="mt-3 pt-2.5 border-t-2 border-black flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Volume2 className={`w-4 h-4 ${volumeLevel > 0.04 ? 'text-[#FF2A55] animate-bounce' : 'text-slate-400'}`} />
-              <div className="flex items-end space-x-1 h-5">
-                {[0.1, 0.25, 0.4, 0.6, 0.8].map((threshold, idx) => {
-                  const isActive = volumeLevel >= threshold * 0.35;
-                  return (
-                    <div
-                      key={idx}
-                      className={`w-1.5 rounded-sm border border-black transition-all ${
-                        isActive
-                          ? idx > 3
-                            ? 'bg-[#FF2A55] h-5'
-                            : idx > 1
-                            ? 'bg-[#FFE500] h-4'
-                            : 'bg-[#00F5D4] h-3'
-                          : 'bg-slate-200 h-1.5'
-                      }`}
-                    />
-                  );
-                })}
+                <div>
+                  <span className="text-xs font-black uppercase text-[#FF2A55] font-display tracking-wide block leading-tight">
+                    Live Speech Stream
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-500">
+                    Language: {SUPPORTED_LANGUAGES.find(l => l.code === language)?.nativeName || 'Auto'}
+                  </span>
+                </div>
               </div>
+
+              <button
+                onClick={onMicClick}
+                className="px-3.5 py-1.5 rounded-xl bg-[#00F5D4] text-black text-xs font-black border-2 border-black shadow-[2px_2px_0px_#000] flex items-center space-x-1.5 hover:bg-[#FFE500] cursor-pointer active:translate-x-0.5 active:translate-y-0.5 transition-all"
+              >
+                <Square className="w-3.5 h-3.5 fill-current" />
+                <span>Done Speaking</span>
+              </button>
             </div>
 
-            <span className="text-[10px] font-mono-data font-black text-slate-700">
-              {audioDetected ? "⚡ Audio Active" : "Waiting for voice..."}
-            </span>
-          </div>
+            {/* Real-Time Live Transcribed Text (Large High-Visibility Display) */}
+            <div className="p-3.5 bg-black/5 rounded-2xl border-2 border-black/15 min-h-[64px] flex items-center">
+              <p className="text-sm sm:text-base font-extrabold text-slate-950 leading-snug font-sans w-full">
+                {liveTranscript ? (
+                  <span className="text-slate-950 font-black">
+                    &ldquo;{liveTranscript}&rdquo;
+                  </span>
+                ) : (
+                  <span className="text-slate-400 font-medium italic text-xs sm:text-sm">
+                    🎙️ Listening to your voice in real time... Speak now!
+                  </span>
+                )}
+              </p>
+            </div>
 
-          {/* Direct submit button if words detected */}
-          {liveTranscript.trim() && (
-            <button
-              onClick={onMicClick}
-              className="mt-2.5 w-full py-1.5 bg-[#FFE500] text-black border-2 border-black rounded-xl text-xs font-black flex items-center justify-center space-x-1 shadow-[2px_2px_0px_#000] cursor-pointer hover:bg-[#FF2A55] hover:text-white transition-colors"
-            >
-              <span>Submit &quot;{liveTranscript.slice(0, 26)}...&quot;</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          )}
+            {/* Real-time Audio VU Meter & Status */}
+            <div className="mt-3 pt-2.5 border-t-2 border-black flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Volume2 className={`w-4 h-4 ${volumeLevel > 0.04 ? 'text-[#FF2A55] animate-bounce' : 'text-slate-400'}`} />
+                <div className="flex items-end space-x-1 h-5">
+                  {[0.1, 0.25, 0.4, 0.6, 0.8].map((threshold, idx) => {
+                    const isActive = volumeLevel >= threshold * 0.35;
+                    return (
+                      <div
+                        key={idx}
+                        className={`w-1.5 rounded-sm border border-black transition-all ${
+                          isActive
+                            ? idx > 3
+                              ? 'bg-[#FF2A55] h-5'
+                              : idx > 1
+                              ? 'bg-[#FFE500] h-4'
+                              : 'bg-[#00F5D4] h-3'
+                            : 'bg-slate-200 h-1.5'
+                        }`}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+
+              <span className="text-[10px] font-mono-data font-black text-slate-700">
+                {audioDetected ? "⚡ Voice Signal Active" : "Waiting for audio..."}
+              </span>
+            </div>
+
+            {/* Direct submit button if words detected */}
+            {liveTranscript.trim() && (
+              <button
+                onClick={onMicClick}
+                className="mt-3 w-full py-2 bg-[#FFE500] hover:bg-[#FF2A55] hover:text-white text-black border-2 border-black rounded-xl text-xs font-black flex items-center justify-center space-x-1.5 shadow-[3px_3px_0px_#000] cursor-pointer transition-all active:translate-x-0.5 active:translate-y-0.5"
+              >
+                <span>Ask: &quot;{liveTranscript.slice(0, 32)}...&quot;</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>

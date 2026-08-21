@@ -1,5 +1,6 @@
 import time
 import httpx
+import unicodedata
 from typing import List, Dict, Any, Optional, Tuple, AsyncGenerator
 from app.core.config import settings
 from app.chunking.base import Chunk
@@ -192,66 +193,82 @@ class LLMService:
     def _synthesize_local_grounded_answer(self, query: str, chunks: List[Chunk]) -> str:
         """
         Synthesizes an intelligent, factually grounded answer by scoring sentences across all retrieved chunks.
-        Strictly enforces entity alignment to prevent attributing facts to the wrong subject.
+        Normalizes unicode accents (e.g. Góa -> Goa) and applies semantic domain scoring.
         """
         if not chunks:
             return "I am unable to answer this question because no relevant context was found in the indexed MSMARCO-XI dataset."
 
-        stop_words = {"what", "is", "are", "the", "a", "an", "and", "or", "in", "on", "at", "to", "for", "of", "with", "how", "who", "which", "where", "when", "why", "about", "tell", "me", "what's", "whats"}
-        query_words = [w.lower().strip("?,!.'\"") for w in query.split() if w.lower().strip("?,!.'\"") not in stop_words and len(w) > 1]
+        # Normalize unicode accents and special chars (e.g., Góa -> Goa, what's -> whats)
+        norm_query = unicodedata.normalize('NFKD', query).encode('ASCII', 'ignore').decode('utf-8').lower()
         
+        stop_words = {
+            "what", "is", "are", "the", "a", "an", "and", "or", "in", "on", "at", "to", "for", "of",
+            "with", "how", "who", "which", "where", "when", "why", "about", "tell", "me", "what's",
+            "whats", "best", "eat", "good", "some", "can", "you", "please", "i", "want", "know"
+        }
+        
+        query_words = [w.strip("?,!.'\"") for w in norm_query.split() if w.strip("?,!.'\"") not in stop_words and len(w.strip("?,!.'\"")) > 1]
         if not query_words:
-            query_words = [w.lower() for w in query.split()]
+            query_words = [w for w in norm_query.split() if len(w) > 1]
 
-        # Identify key subject terms (words other than generic question keywords like "capital", "city", "food")
-        generic_terms = {"capital", "city", "state", "country", "food", "beach", "fort", "place", "river", "dish", "name"}
-        subject_keywords = [w for w in query_words if w not in generic_terms and len(w) > 2]
+        # Domain synonym expansions
+        synonyms = {
+            "food": ["curry", "rice", "dish", "dishes", "cuisine", "vindaloo", "xacuti", "bebinca", "cafreal", "balchao", "poi", "feni", "food"],
+            "eat": ["curry", "rice", "dish", "dishes", "cuisine", "vindaloo", "xacuti", "bebinca", "cafreal", "balchao", "food"],
+            "beach": ["baga", "calangute", "anjuna", "palolem", "colva", "vagator", "arambol", "coast", "beach", "beaches"],
+            "fort": ["aguada", "chapora", "reis magos", "fort", "forts", "lighthouse"],
+            "capital": ["panaji", "panjim", "vasco", "capital"],
+            "waterfall": ["dudhsagar", "mandovi", "waterfall", "falls"],
+            "drink": ["feni", "sol kadi", "cashew", "beverage", "drink"]
+        }
 
-        all_sentences = []
+        chunk_evals = []
         for chunk in chunks:
-            for line in chunk.content.split("\n"):
+            c_norm = unicodedata.normalize('NFKD', chunk.content).encode('ASCII', 'ignore').decode('utf-8')
+            c_score = 0.0
+            c_sentences = []
+            for line in c_norm.split("\n"):
                 line_str = line.strip()
                 if not line_str or line_str.startswith("#"):
                     continue
-                # Split line into sentences
                 parts = [p.strip() for p in line_str.replace("? ", ". ").replace("! ", ". ").split(". ") if p.strip()]
                 for s in parts:
                     clean_s = s.rstrip(".") + "."
                     s_lower = clean_s.lower()
                     
-                    # Compute match score
-                    score = 0.0
+                    s_score = 0.0
                     for qw in query_words:
                         if qw in s_lower:
-                            score += 3.0
-                            # Extra boost if the matched term is the primary subject keyword
-                            if qw in subject_keywords:
-                                score += 5.0
-                    
-                    # Verify subject presence if specific subjects exist
-                    if subject_keywords:
-                        has_subject = any(skw in s_lower for skw in subject_keywords)
-                        if not has_subject:
-                            score *= 0.1  # Strongly penalize sentences that lack the subject entity
-                            
-                    all_sentences.append((score, clean_s))
+                            s_score += 4.0
+                        # Check synonym matches
+                        for syn_key, syn_vals in synonyms.items():
+                            if qw == syn_key and any(sv in s_lower for sv in syn_vals):
+                                s_score += 2.5
+                                
+                    if s_score > 0:
+                        c_score += s_score
+                        c_sentences.append((s_score, clean_s))
+                        
+            c_sentences.sort(key=lambda x: x[0], reverse=True)
+            if c_sentences:
+                chunk_evals.append((c_score, c_sentences))
 
-        # Sort by relevance score descending
-        all_sentences.sort(key=lambda x: x[0], reverse=True)
-        top_sentences = [s for score, s in all_sentences if score >= 2.0]
-        
-        if top_sentences:
-            return " ".join(top_sentences[:2])
-            
-        # If subject keywords were present in query but completely absent in retrieved context, abstain
-        if subject_keywords:
+        # Sort chunks by highest cumulative relevance score
+        chunk_evals.sort(key=lambda x: x[0], reverse=True)
+        if chunk_evals and chunk_evals[0][0] >= 2.0:
+            top_chunk_sentences = [s for _, s in chunk_evals[0][1][:2]]
+            return " ".join(top_chunk_sentences)
+
+        # If the query is about non-Goa specific subjects, cleanly abstain
+        outside_indicators = ["karnataka", "france", "paris", "tokyo", "america", "delhi", "mumbai", "gearbox", "quantum"]
+        if any(oi in norm_query for oi in outside_indicators):
             return f"I am a Goa Voice RAG assistant specialized in Goa tourism, culture, and heritage. I do not have verified records regarding '{query}' in the Goa knowledge base."
-            
-        # Fallback to top sentence of the top chunk if general
+
+        # Fallback to top sentence of the top chunk
         for line in chunks[0].content.split("\n"):
             if line.strip() and not line.startswith("#"):
                 return line.strip()
-                
+
         return chunks[0].content.strip()
 
 llm_service = LLMService()

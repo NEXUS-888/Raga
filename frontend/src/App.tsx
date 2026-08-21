@@ -3,13 +3,15 @@ import {
   Zap,
   Palmtree,
   Send,
-  Loader2
+  Loader2,
+  Globe
 } from 'lucide-react';
 import { GoaBeachEnvironment } from './components/GoaBeachEnvironment';
 import { HangingMicClickStage } from './components/HangingMicClickStage';
 import { FloatingOrganicAnswer } from './components/FloatingOrganicAnswer';
 import { SpecsDrawer } from './components/SpecsDrawer';
 import { SystemEvidenceView } from './components/SystemEvidenceView';
+import { LanguagePickerModal, SUPPORTED_LANGUAGES } from './components/LanguagePickerModal';
 import type { VoiceRAGResponse } from './types';
 
 const API_BASE = "";
@@ -20,6 +22,7 @@ export const App: React.FC = () => {
   const [isListening, setIsListening] = useState<boolean>(false);
   const [glimmerTrigger, setGlimmerTrigger] = useState<number>(0);
   const [isSpecsOpen, setIsSpecsOpen] = useState<boolean>(false);
+  const [isLangPickerOpen, setIsLangPickerOpen] = useState<boolean>(false);
   const [chunkingStrategy, setChunkingStrategy] = useState('recursive_hierarchical');
   const [language, setLanguage] = useState('en');
   const [isLoading, setIsLoading] = useState(false);
@@ -195,14 +198,15 @@ export const App: React.FC = () => {
               <span className="font-bold text-white">MSMARCO-XI</span>
             </div>
 
-            <select
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="bg-black text-white border-2 border-black rounded-xl px-2.5 py-1.5 text-xs font-bold shadow-[2px_2px_0px_#000] focus:outline-none"
+            {/* Language Selector Trigger */}
+            <button
+              onClick={() => setIsLangPickerOpen(true)}
+              className="bg-black hover:bg-slate-900 text-white border-2 border-black rounded-xl px-2.5 py-1.5 text-xs font-bold shadow-[2px_2px_0px_#000] flex items-center space-x-1.5 cursor-pointer active:translate-x-0.5 active:translate-y-0.5 transition-all"
+              title="Change Spoken Language Hint / Auto Detect"
             >
-              <option value="en">EN</option>
-              <option value="hi">हिंदी HI</option>
-            </select>
+              <Globe className="w-3.5 h-3.5 text-[#00F5D4]" />
+              <span>{SUPPORTED_LANGUAGES.find(l => l.code === language)?.nativeName || 'Auto'}</span>
+            </button>
           </div>
 
           {/* Right Controls: Workspace Switcher + Specs Trigger */}
@@ -365,6 +369,14 @@ export const App: React.FC = () => {
         apiBase={API_BASE}
         chunkingStrategy={chunkingStrategy}
         onSelectStrategy={(strat) => setChunkingStrategy(strat)}
+      />
+
+      {/* 7. Spoken Language Hint & Indic Auto-Detect Modal */}
+      <LanguagePickerModal
+        isOpen={isLangPickerOpen}
+        selectedLanguage={language}
+        onSelectLanguage={(code) => setLanguage(code)}
+        onClose={() => setIsLangPickerOpen(false)}
       />
     </div>
   );
