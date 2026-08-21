@@ -14,7 +14,7 @@ export const RagaLogoPill: React.FC<RagaLogoPillProps> = ({
   return (
     <div
       onClick={onClick}
-      className={`group relative h-[44px] px-3 rounded-full border-[3px] border-[#220738] bg-gradient-to-b from-[#FFE817] via-[#FFCA00] to-[#FFA000] overflow-hidden flex items-center gap-2 shadow-lg select-none cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-amber-500/30 ${className}`}
+      className={`group relative h-[36px] sm:h-[44px] px-2.5 sm:px-3 rounded-full border-[2.5px] sm:border-[3px] border-[#220738] bg-gradient-to-b from-[#FFE817] via-[#FFCA00] to-[#FFA000] overflow-hidden flex items-center gap-1.5 sm:gap-2 shadow-lg select-none cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 shrink-0 ${className}`}
       style={{
         transform: `scale(${scale})`,
         transformOrigin: 'left center',
@@ -38,7 +38,7 @@ export const RagaLogoPill: React.FC<RagaLogoPillProps> = ({
       </svg>
 
       {/* Mini Retro Mic Icon with Sound Waves */}
-      <div className="relative w-8 h-8 flex items-center justify-center shrink-0">
+      <div className="relative w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center shrink-0">
         <svg viewBox="0 0 130 110" className="w-full h-full overflow-visible">
           {/* Soundwaves */}
           <g className="group-hover:scale-110 transition-transform origin-center">
@@ -60,10 +60,10 @@ export const RagaLogoPill: React.FC<RagaLogoPillProps> = ({
       </div>
 
       {/* Divider */}
-      <div className="w-[3px] h-6 bg-[#FF8000] rounded-full shrink-0 shadow-sm" />
+      <div className="w-[2.5px] sm:w-[3px] h-4 sm:h-6 bg-[#FF8000] rounded-full shrink-0 shadow-sm" />
 
       {/* Chunky RAGA Letters */}
-      <div className="font-black text-[24px] leading-none tracking-tight text-[#220738] pr-1" style={{ fontWeight: 900 }}>
+      <div className="font-black text-[18px] sm:text-[24px] leading-none tracking-tight text-[#220738] pr-1" style={{ fontWeight: 900 }}>
         RAGA
       </div>
     </div>

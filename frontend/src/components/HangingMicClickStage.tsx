@@ -45,6 +45,14 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
   const [swayAngle, setSwayAngle] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   const transcriptRef = useRef('');
   const recognitionRef = useRef<any>(null);
@@ -327,8 +335,8 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
     onMicClick();
   };
 
-  // Base hanging cable length
-  const baseCableHeight = isListening ? 160 : 75;
+  // Base hanging cable length & Responsive physics
+  const baseCableHeight = isListening ? (isMobile ? 95 : 160) : (isMobile ? 40 : 75);
   const cableHeight = isDragging ? baseCableHeight + dragOffset.y * 0.4 : baseCableHeight;
   const pulseScale = isListening ? Math.min(1.12, 1 + volumeLevel * 0.25) : 1;
 
@@ -338,7 +346,7 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
       {/* 1. TOP CEILING MOUNT DISH (Anchored at Top Center)       */}
       {/* ======================================================== */}
       <div
-        style={{ left: '50%', transform: 'translateX(-50%)', top: 0, width: '140px', height: '36px' }}
+        style={{ left: '50%', transform: 'translateX(-50%)', top: 0, width: isMobile ? '110px' : '140px', height: isMobile ? '28px' : '36px' }}
         className="absolute z-20 pointer-events-auto flex items-center justify-center filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)]"
       >
         <img
@@ -356,7 +364,7 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
         style={{
           position: 'absolute',
           left: '50%',
-          top: '30px', // Anchored right at ceiling dish collar
+          top: isMobile ? '22px' : '30px', // Anchored right at ceiling dish collar
           transformOrigin: '50% 0px', // PIVOTS CLEANLY FROM CEILING
           transform: `translateX(-50%) rotate(${swayAngle}deg)`,
           transition: isDragging ? 'none' : 'transform 700ms cubic-bezier(0.25, 1, 0.5, 1)',
@@ -369,28 +377,28 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
       >
         {/* Pulsing Helper Prompt */}
         {!isRevealed && !isListening && (
-          <div className="absolute -top-3 px-4 py-1.5 bg-[#FFE500] text-black font-black text-xs border-2 border-black rounded-full shadow-[4px_4px_0px_#000] whitespace-nowrap flex items-center space-x-1.5 animate-bounce font-display z-30">
-            <Sparkles className="w-3.5 h-3.5 fill-current text-black" />
+          <div className="absolute -top-3 px-3 sm:px-4 py-1 sm:py-1.5 bg-[#FFE500] text-black font-black text-[10px] sm:text-xs border-2 border-black rounded-full shadow-[3px_3px_0px_#000] sm:shadow-[4px_4px_0px_#000] whitespace-nowrap flex items-center space-x-1 sm:space-x-1.5 animate-bounce font-display z-30">
+            <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current text-black" />
             <span>PULL OR CLICK MIC TO ENTER GOA</span>
-            <MoveDown className="w-3.5 h-3.5 stroke-[3]" />
+            <MoveDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[3]" />
           </div>
         )}
 
         {isRevealed && !isListening && (
-          <div className="absolute -top-2 px-3.5 py-1 bg-[#00F5D4] text-black font-black text-[11px] border-2 border-black rounded-full shadow-[3px_3px_0px_#000] whitespace-nowrap flex items-center space-x-1 font-display z-30">
+          <div className="absolute -top-2 px-2.5 sm:px-3.5 py-0.5 sm:py-1 bg-[#00F5D4] text-black font-black text-[9px] sm:text-[11px] border-2 border-black rounded-full shadow-[2px_2px_0px_#000] sm:shadow-[3px_3px_0px_#000] whitespace-nowrap flex items-center space-x-1 font-display z-30">
             <span>PULL DOWN TO SPEAK</span>
-            <MoveDown className="w-3 h-3 stroke-[2.5]" />
+            <MoveDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[2.5]" />
           </div>
         )}
 
         {/* 2A. HANGING BRAIDED CABLE */}
         <div
           style={{
-            width: '8px',
+            width: isMobile ? '6px' : '8px',
             height: `${cableHeight}px`,
             backgroundImage: "url('/assets/vintage_cable_tile.png')",
             backgroundRepeat: 'repeat-y',
-            backgroundSize: '8px auto',
+            backgroundSize: `${isMobile ? 6 : 8}px auto`,
             transition: isDragging ? 'none' : 'height 900ms cubic-bezier(0.25, 1, 0.5, 1)',
           }}
           className="filter drop-shadow-[2px_2px_0px_rgba(0,0,0,0.85)] pointer-events-none"
@@ -399,13 +407,13 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
         {/* 2B. MICROPHONE CAPSULE (Seamlessly locked into the cable bottom) */}
         <div
           style={{
-            width: '134px',
-            marginTop: '-12px', // Deep physical overlap into the top purple connector collar
+            width: isMobile ? '96px' : '134px',
+            marginTop: isMobile ? '-8px' : '-12px', // Deep physical overlap into the top purple connector collar
             transform: `scale(${pulseScale})`,
             transformOrigin: '49% 12px',
             filter: isListening
-              ? 'drop-shadow(0 0 30px #00F5D4) drop-shadow(0 0 60px rgba(0, 245, 212, 0.6)) drop-shadow(8px 8px 0px rgba(0,0,0,0.9))'
-              : 'drop-shadow(8px 8px 0px rgba(0,0,0,0.85))',
+              ? 'drop-shadow(0 0 30px #00F5D4) drop-shadow(0 0 60px rgba(0, 245, 212, 0.6)) drop-shadow(6px 6px 0px rgba(0,0,0,0.9))'
+              : 'drop-shadow(6px 6px 0px rgba(0,0,0,0.85))',
           }}
           className="relative group transition-all duration-300 pointer-events-auto"
         >
@@ -413,7 +421,7 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
           {isListening && (
             <div
               style={{ transform: `scale(${1.2 + volumeLevel * 1.5})` }}
-              className="absolute -inset-4 rounded-full bg-[#00F5D4]/25 blur-xl transition-transform duration-75 pointer-events-none"
+              className="absolute -inset-3 sm:-inset-4 rounded-full bg-[#00F5D4]/25 blur-xl transition-transform duration-75 pointer-events-none"
             />
           )}
 
@@ -434,13 +442,13 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
           style={{
             left: '50%',
             transform: 'translateX(-50%)',
-            top: `${baseCableHeight + 175}px`,
+            top: `${baseCableHeight + (isMobile ? 120 : 175)}px`,
           }}
-          className="absolute pointer-events-auto w-full max-w-lg px-4 sm:px-0 z-40 animate-slide-up"
+          className="absolute pointer-events-auto w-[calc(100%-1.5rem)] sm:w-full max-w-lg px-2 sm:px-0 z-40 animate-slide-up"
         >
-          <div className="p-5 sm:p-6 bg-[#FFFDF8] text-slate-900 border-3 border-black rounded-3xl shadow-[8px_8px_0px_#000]">
+          <div className="p-4 sm:p-6 bg-[#FFFDF8] text-slate-900 border-2 sm:border-3 border-black rounded-2xl sm:rounded-3xl shadow-[6px_6px_0px_#000] sm:shadow-[8px_8px_0px_#000] max-h-[60vh] overflow-y-auto">
             {/* Header */}
-            <div className="flex items-center justify-between border-b-2 border-black pb-2.5 mb-3">
+            <div className="flex items-center justify-between border-b-2 border-black pb-2 mb-2.5 sm:pb-2.5 sm:mb-3">
               <div className="flex items-center space-x-2">
                 <span className="p-1.5 rounded-lg bg-[#FF2A55] text-white border border-black animate-pulse">
                   <Mic className="w-4 h-4 fill-current" />

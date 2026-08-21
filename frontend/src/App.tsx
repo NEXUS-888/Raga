@@ -184,7 +184,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-[#05070D] font-sans select-none">
+    <div className="relative min-h-[100dvh] h-[100dvh] w-full overflow-hidden bg-[#05070D] font-sans select-none">
       {/* 🎬 Dynamic RAGA Splash Reveal Loading Animation */}
       {showSplash && (
         <RagaSplashReveal onComplete={() => setShowSplash(false)} />
@@ -192,13 +192,13 @@ export const App: React.FC = () => {
 
       {/* 🧭 Top Minimalist Header with Dual Workspace Switcher & Dataset Badge */}
       {isRevealed && (
-        <header className="fixed top-0 left-0 right-0 z-40 p-4 sm:px-8 flex items-center justify-between pointer-events-none animate-slide-up">
+        <header className="fixed top-0 left-0 right-0 z-40 p-2.5 sm:p-4 sm:px-8 flex items-center justify-between pointer-events-none animate-slide-up">
           {/* Left Brand, Dataset Badge & Lang */}
-          <div className="flex items-center space-x-3 pointer-events-auto">
+          <div className="flex items-center space-x-1.5 sm:space-x-3 pointer-events-auto">
             {/* Interactive RAGA Brand Logo (Click to Replay Reveal) */}
             <RagaLogoPill onClick={() => setShowSplash(true)} />
 
-            <div className="hidden md:flex items-center space-x-1 px-2.5 py-1 bg-[#1E293B]/90 border border-slate-700 text-[10px] font-mono text-cyan-300 rounded-lg shadow-sm">
+            <div className="hidden lg:flex items-center space-x-1 px-2.5 py-1 bg-[#1E293B]/90 border border-slate-700 text-[10px] font-mono text-cyan-300 rounded-lg shadow-sm">
               <span>Dataset:</span>
               <span className="font-bold text-white">MSMARCO-XI</span>
             </div>
@@ -206,21 +206,21 @@ export const App: React.FC = () => {
             {/* Language Selector Trigger */}
             <button
               onClick={() => setIsLangPickerOpen(true)}
-              className="bg-black/90 hover:bg-slate-900 text-white border-2 border-black rounded-xl px-2.5 py-1.5 text-xs font-bold shadow-[2px_2px_0px_#000] flex items-center space-x-1.5 cursor-pointer active:translate-x-0.5 active:translate-y-0.5 transition-all"
+              className="bg-black/90 hover:bg-slate-900 text-white border-2 border-black rounded-xl px-2 py-1 sm:px-2.5 sm:py-1.5 text-[11px] sm:text-xs font-bold shadow-[2px_2px_0px_#000] flex items-center space-x-1 sm:space-x-1.5 cursor-pointer active:translate-x-0.5 active:translate-y-0.5 transition-all shrink-0"
               title="Change Spoken Language Hint / Auto Detect"
             >
-              <Globe className="w-3.5 h-3.5 text-[#00F5D4]" />
-              <span>{SUPPORTED_LANGUAGES.find(l => l.code === language)?.nativeName || 'Auto'}</span>
+              <Globe className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#00F5D4]" />
+              <span className="truncate max-w-[55px] sm:max-w-none">{SUPPORTED_LANGUAGES.find(l => l.code === language)?.nativeName || 'Auto'}</span>
             </button>
           </div>
 
           {/* Right Controls: Workspace Switcher + Specs Trigger */}
-          <div className="flex items-center space-x-2.5 pointer-events-auto">
+          <div className="flex items-center space-x-1.5 sm:space-x-2.5 pointer-events-auto">
             {/* Dual Workspace Switcher */}
-            <div className="flex items-center p-1 bg-[#0F172A]/90 border border-slate-700/80 rounded-full shadow-2xl backdrop-blur-xl">
+            <div className="flex items-center p-0.5 sm:p-1 bg-[#0F172A]/90 border border-slate-700/80 rounded-full shadow-2xl backdrop-blur-xl">
               <button
                 onClick={() => setWorkspaceMode('voice')}
-                className={`px-3 sm:px-3.5 py-1 rounded-full text-xs font-bold transition-all flex items-center space-x-1 cursor-pointer ${
+                className={`px-2.5 sm:px-3.5 py-1 rounded-full text-[11px] sm:text-xs font-bold transition-all flex items-center space-x-1 cursor-pointer ${
                   workspaceMode === 'voice'
                     ? 'bg-[#FF2A55] text-white shadow-[2px_2px_0px_#000]'
                     : 'text-slate-400 hover:text-white'
@@ -231,7 +231,7 @@ export const App: React.FC = () => {
 
               <button
                 onClick={() => setWorkspaceMode('evidence')}
-                className={`px-3 sm:px-3.5 py-1 rounded-full text-xs font-bold transition-all flex items-center space-x-1 cursor-pointer ${
+                className={`px-2.5 sm:px-3.5 py-1 rounded-full text-[11px] sm:text-xs font-bold transition-all flex items-center space-x-1 cursor-pointer ${
                   workspaceMode === 'evidence'
                     ? 'bg-[#00F5D4] text-black shadow-[2px_2px_0px_#000]'
                     : 'text-slate-400 hover:text-white'
@@ -244,9 +244,9 @@ export const App: React.FC = () => {
             {/* Technical Specs Trigger */}
             <button
               onClick={() => setIsSpecsOpen(true)}
-              className="btn-memphis px-3 py-1.5 rounded-xl text-xs font-black uppercase flex items-center space-x-1"
+              className="btn-memphis px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-black uppercase flex items-center space-x-1"
             >
-              <Zap className="w-3.5 h-3.5 fill-current" />
+              <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current" />
               <span className="hidden sm:inline">Specs 🤓</span>
             </button>
           </div>
@@ -278,22 +278,22 @@ export const App: React.FC = () => {
           {/* 🌟 3. Floating Organic Answer Card */}
           {ragResult && (
             <FloatingOrganicAnswer
-            response={ragResult}
-            onDismiss={() => setRagResult(null)}
-            onOpenSpecs={() => setIsSpecsOpen(true)}
-          />
+              response={ragResult}
+              onDismiss={() => setRagResult(null)}
+              onOpenSpecs={() => setIsSpecsOpen(true)}
+            />
           )}
 
           {/* 💬 4. Tester Guide & Bottom Input with Categorized Prompt Chips */}
           {isRevealed && (
-            <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-20 w-full max-w-3xl px-4 flex flex-col items-center space-y-2.5 pointer-events-auto animate-slide-up">
+            <div className="fixed bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 w-full max-w-2xl px-2.5 sm:px-4 flex flex-col items-center space-y-1.5 sm:space-y-2 pointer-events-auto animate-slide-up pb-[max(0.5rem,env(safe-area-inset-bottom))]">
               {/* Category Filter Pills */}
-              <div className="flex items-center space-x-1.5 p-1 bg-black/80 backdrop-blur-md rounded-full border border-slate-800 text-[11px] font-bold">
+              <div className="flex items-center space-x-1 sm:space-x-1.5 p-0.5 sm:p-1 bg-black/85 backdrop-blur-md rounded-full border border-slate-800 text-[10px] sm:text-[11px] font-bold max-w-full overflow-x-auto no-scrollbar">
                 {Object.entries(promptCategories).map(([key, cat]) => (
                   <button
                     key={key}
                     onClick={() => setSelectedPromptCategory(key as any)}
-                    className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
+                    className={`px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full transition-all cursor-pointer whitespace-nowrap ${
                       selectedPromptCategory === key
                         ? 'bg-[#FFE500] text-black shadow-[2px_2px_0px_#000]'
                         : 'text-slate-400 hover:text-white'
@@ -304,13 +304,13 @@ export const App: React.FC = () => {
                 ))}
               </div>
 
-              {/* Sample Prompt Chips for Active Category */}
-              <div className="flex flex-wrap justify-center gap-2">
+              {/* Sample Prompt Chips for Active Category (Horizontal Swipe on Mobile) */}
+              <div className="flex items-center space-x-1.5 sm:flex-wrap sm:justify-center overflow-x-auto no-scrollbar w-full py-0.5 px-1">
                 {promptCategories[selectedPromptCategory].questions.map((sq, i) => (
                   <button
                     key={i}
                     onClick={() => handleTextSubmit(sq)}
-                    className="px-3.5 py-1.5 bg-[#05070D]/90 backdrop-blur-md text-amber-200 border-2 border-black rounded-full text-[11px] font-bold shadow-[3px_3px_0px_#000] hover:bg-[#FF2A55] hover:text-white transition-all truncate max-w-sm cursor-pointer"
+                    className="px-2.5 py-1 sm:px-3.5 sm:py-1.5 bg-[#05070D]/90 backdrop-blur-md text-amber-200 border-2 border-black rounded-full text-[10px] sm:text-[11px] font-bold shadow-[2px_2px_0px_#000] sm:shadow-[3px_3px_0px_#000] hover:bg-[#FF2A55] hover:text-white transition-all whitespace-nowrap sm:whitespace-normal max-w-xs truncate cursor-pointer shrink-0 sm:shrink"
                   >
                     {sq}
                   </button>
@@ -326,22 +326,22 @@ export const App: React.FC = () => {
                     setTextInput('');
                   }
                 }}
-                className="w-full flex gap-2 bg-[#05070D]/95 backdrop-blur-xl p-1.5 rounded-3xl border-2 border-black shadow-[6px_6px_0px_#000]"
+                className="w-full flex gap-1.5 sm:gap-2 bg-[#05070D]/95 backdrop-blur-xl p-1 sm:p-1.5 rounded-2xl sm:rounded-3xl border-2 border-black shadow-[4px_4px_0px_#000] sm:shadow-[6px_6px_0px_#000]"
               >
                 <input
                   type="text"
                   value={textInput}
                   onChange={(e) => setTextInput(e.target.value)}
-                  placeholder="Ask any question from the MSMARCO-XI dataset (or click the hanging mic)..."
-                  className="flex-1 bg-transparent text-white placeholder-slate-400 px-4 py-3 text-xs font-medium focus:outline-none"
+                  placeholder="Ask any question (or click the hanging mic)..."
+                  className="flex-1 bg-transparent text-white placeholder-slate-400 px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium focus:outline-none placeholder:text-[11px] sm:placeholder:text-xs"
                   disabled={isLoading}
                 />
                 <button
                   type="submit"
                   disabled={isLoading || !textInput.trim()}
-                  className="px-6 py-3 bg-[#FF2A55] hover:bg-[#E6194B] text-white font-black text-xs uppercase tracking-wider border-2 border-black rounded-2xl shadow-[3px_3px_0px_#000] hover:shadow-[4px_4px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center space-x-1.5 disabled:opacity-40 cursor-pointer"
+                  className="px-4 sm:px-6 py-2 sm:py-2.5 bg-[#FF2A55] hover:bg-[#E6194B] text-white font-black text-xs uppercase tracking-wider border-2 border-black rounded-xl sm:rounded-2xl shadow-[2px_2px_0px_#000] sm:shadow-[3px_3px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center space-x-1 disabled:opacity-40 cursor-pointer shrink-0"
                 >
-                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                   <span>Ask</span>
                 </button>
               </form>
