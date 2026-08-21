@@ -26,9 +26,9 @@ export const ParallaxLayer: React.FC<ParallaxLayerProps> = ({ depth, children, c
       const normalizedX = (e.clientX / innerWidth - 0.5) * 2; // -1 to 1
       const normalizedY = (e.clientY / innerHeight - 0.5) * 2;
 
-      // Max foreground shift: 18px horizontal, 10px vertical
-      const shiftX = normalizedX * 18 * depth;
-      const shiftY = normalizedY * 10 * depth;
+      // Max foreground shift: 24px horizontal, 14px vertical
+      const shiftX = normalizedX * 24 * depth;
+      const shiftY = normalizedY * 14 * depth;
 
       quickX(shiftX);
       quickY(shiftY);
@@ -58,4 +58,11 @@ export const ParallaxLayer: React.FC<ParallaxLayerProps> = ({ depth, children, c
       {children}
     </div>
   );
+};
+
+export const ParallaxContainer: React.FC<{ children: React.ReactNode; className?: string }> = ({
+  children,
+  className = '',
+}) => {
+  return <div className={`relative w-full h-full overflow-hidden ${className}`}>{children}</div>;
 };
