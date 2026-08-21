@@ -199,8 +199,18 @@ class LLMService:
             return "I am unable to answer this question because no relevant context was found in the indexed MSMARCO-XI dataset."
 
         # Normalize unicode accents and special chars (e.g., Góa -> Goa, what's -> whats)
-        norm_query = unicodedata.normalize('NFKD', query).encode('ASCII', 'ignore').decode('utf-8').lower()
-        
+        norm_query = unicodedata.normalize('NFKD', query).encode('ASCII', 'ignore').decode('utf-8').lower().strip()
+
+        # 1. Gracefully handle conversational greetings and self-intro queries
+        greetings = ["hello", "hi", "hey", "namaste", "good morning", "good evening", "how are you", "who are you", "what can you do"]
+        if any(norm_query.startswith(g) or g in norm_query for g in greetings) and not any(k in norm_query for k in ["beach", "capital", "food", "fort", "dish", "curry", "feni", "waterfall", "monsoon"]):
+            if "how are you" in norm_query:
+                return "Hello! I am doing great and ready to assist you. I am your specialized Goa Voice AI Assistant—ask me anything about Goa's beaches, capital, traditional food, or heritage!"
+            elif "who are you" in norm_query or "what can you do" in norm_query:
+                return "I am the Goa Voice RAG Assistant, designed for sub-200ms voice interactions. I can answer questions about Goa's capital (Panaji), official languages (Konkani/Marathi), famous cuisine (Fish Curry Rice, Bebinca, Feni), beaches, and historic forts!"
+            else:
+                return "Hello! Welcome to the Goa Voice RAG assistant. How can I help you explore Goa's rich culture, capital, beaches, or cuisine today?"
+
         stop_words = {
             "what", "is", "are", "the", "a", "an", "and", "or", "in", "on", "at", "to", "for", "of",
             "with", "how", "who", "which", "where", "when", "why", "about", "tell", "me", "what's",

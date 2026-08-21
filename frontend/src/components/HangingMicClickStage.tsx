@@ -59,39 +59,7 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
   const suppressClickRef = useRef<boolean>(false);
   const startPosRef = useRef({ x: 0, y: 0 });
 
-  // 1. Initialize Web Speech Recognition
-  useEffect(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      try {
-        const recognizer = new SpeechRecognition();
-        recognizer.continuous = true;
-        recognizer.interimResults = true;
-        recognizer.lang = SPEECH_LANG_MAP[language] || 'en-IN';
-
-        recognizer.onresult = (event: any) => {
-          let fullText = '';
-          for (let i = 0; i < event.results.length; i++) {
-            fullText += event.results[i][0].transcript + ' ';
-          }
-          const clean = fullText.trim();
-          if (clean) {
-            transcriptRef.current = clean;
-            setLiveTranscript(clean);
-          }
-        };
-
-        recognizer.onerror = (e: any) => {
-          console.warn("Speech recognition notice:", e?.error || e);
-        };
-
-        recognitionRef.current = recognizer;
-      } catch (err) {
-        console.warn("Speech recognition init error:", err);
-      }
-    }
-  }, []);
-
+  // 1. Web Speech Language sync
   useEffect(() => {
     if (recognitionRef.current) {
       recognitionRef.current.lang = SPEECH_LANG_MAP[language] || 'en-IN';
@@ -146,6 +114,55 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
   const startLiveAudioStream = async () => {
     try {
       pcmChunksRef.current = [];
+      transcriptRef.current = '';
+      setLiveTranscript('');
+      setAudioDetected(false);
+
+      // 1. Initialize Web Speech Recognition fresh on every recording
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        try {
+          if (recognitionRef.current) {
+            try { recognitionRef.current.abort(); } catch (e) {}
+          }
+
+          const recognizer = new SpeechRecognition();
+          recognizer.continuous = true;
+          recognizer.interimResults = true;
+          recognizer.maxAlternatives = 1;
+          recognizer.lang = SPEECH_LANG_MAP[language] || 'en-IN';
+
+          recognizer.onresult = (event: any) => {
+            let fullText = '';
+            for (let i = 0; i < event.results.length; i++) {
+              fullText += event.results[i][0].transcript + ' ';
+            }
+            const clean = fullText.trim();
+            if (clean) {
+              transcriptRef.current = clean;
+              setLiveTranscript(clean);
+              setAudioDetected(true);
+            }
+          };
+
+          recognizer.onerror = (e: any) => {
+            console.warn("Speech recognition notice:", e?.error || e);
+          };
+
+          recognizer.onend = () => {
+            if (wasListeningRef.current) {
+              try { recognizer.start(); } catch (e) {}
+            }
+          };
+
+          recognizer.start();
+          recognitionRef.current = recognizer;
+        } catch (err) {
+          console.warn("Speech recognition start notice:", err);
+        }
+      }
+
+      // 2. Microphone stream for PCM audio & volume meter
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -182,12 +199,6 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
         processorRef.current = processor;
 
         trackMicrophoneVolume();
-      }
-
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.start();
-        } catch (e) {}
       }
     } catch (err) {
       console.warn("Microphone access notice:", err);
@@ -436,15 +447,19 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
             </div>
 
             {/* Real-Time Live Transcribed Text (Large High-Visibility Display) */}
-            <div className="p-3.5 bg-black/5 rounded-2xl border-2 border-black/15 min-h-[64px] flex items-center">
-              <p className="text-sm sm:text-base font-extrabold text-slate-950 leading-snug font-sans w-full">
+            <div className="p-4 bg-black/5 rounded-2xl border-2 border-black/15 min-h-[72px] flex items-center">
+              <p className="text-sm sm:text-base font-extrabold text-slate-950 leading-snug font-sans w-full flex items-center flex-wrap">
                 {liveTranscript ? (
-                  <span className="text-slate-950 font-black">
-                    &ldquo;{liveTranscript}&rdquo;
-                  </span>
+                  <>
+                    <span className="text-slate-950 font-black">
+                      &ldquo;{liveTranscript}&rdquo;
+                    </span>
+                    <span className="inline-block w-2 h-4 bg-[#FF2A55] ml-1.5 animate-pulse rounded-xs" />
+                  </>
                 ) : (
-                  <span className="text-slate-400 font-medium italic text-xs sm:text-sm">
-                    🎙️ Listening to your voice in real time... Speak now!
+                  <span className="text-slate-500 font-semibold italic text-xs sm:text-sm flex items-center">
+                    <span className="inline-block w-2.5 h-2.5 bg-red-500 rounded-full animate-ping mr-2.5" />
+                    Listening to your voice in real time... Speak now!
                   </span>
                 )}
               </p>
