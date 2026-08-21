@@ -1,4 +1,4 @@
-﻿# Dependencies
+# Dependencies
 node_modules/
 .pnpm-store/
 
@@ -35,3 +35,11 @@ pnpm-debug.log*
 # OS Files
 .DS_Store
 Thumbs.db
+
+# Temporary & Reference Directories
+_reference_*/
+*.zip
+*.tar.gz
+scratch/
+.system_generated/
+
