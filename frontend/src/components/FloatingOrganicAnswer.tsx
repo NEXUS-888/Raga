@@ -15,7 +15,7 @@ export const FloatingOrganicAnswer: React.FC<FloatingOrganicAnswerProps> = ({
 }) => {
   return (
     <div
-      className="fixed left-3 right-3 sm:left-10 sm:right-auto top-16 sm:top-24 z-40 max-w-lg lg:max-w-xl w-auto sm:w-full p-4 sm:p-6 bg-[#FFFDF8] text-slate-900 border-2 sm:border-3 border-black rounded-2xl sm:rounded-3xl shadow-[6px_6px_0px_#000] sm:shadow-[8px_8px_0px_#000] max-h-[58vh] sm:max-h-[75vh] overflow-y-auto animate-slide-up select-none pointer-events-auto"
+      className="fixed inset-x-3 sm:inset-x-auto sm:left-10 top-[60px] sm:top-24 z-40 sm:max-w-lg lg:max-w-xl p-4 sm:p-6 bg-[#FFFDF8] text-slate-900 border-2 sm:border-3 border-black rounded-2xl sm:rounded-3xl shadow-[6px_6px_0px_#000] sm:shadow-[8px_8px_0px_#000] max-h-[50vh] sm:max-h-[75vh] overflow-y-auto animate-slide-up select-text pointer-events-auto"
     >
       {/* Header Bar */}
       <div className="flex items-center justify-between border-b-2 border-black pb-2 sm:pb-3 mb-2.5 sm:mb-3">

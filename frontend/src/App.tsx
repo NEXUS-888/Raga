@@ -192,9 +192,9 @@ export const App: React.FC = () => {
 
       {/* 🧭 Top Minimalist Header with Dual Workspace Switcher & Dataset Badge */}
       {isRevealed && (
-        <header className="fixed top-0 left-0 right-0 z-40 p-2.5 sm:p-4 sm:px-8 flex items-center justify-between pointer-events-none animate-slide-up">
+        <header className="fixed top-0 left-0 right-0 z-50 h-13 sm:h-16 px-2.5 sm:px-8 bg-[#05070D]/90 backdrop-blur-xl border-b border-slate-800/80 flex items-center justify-between pointer-events-auto shadow-md">
           {/* Left Brand, Dataset Badge & Lang */}
-          <div className="flex items-center space-x-1.5 sm:space-x-3 pointer-events-auto">
+          <div className="flex items-center space-x-1.5 sm:space-x-3">
             {/* Interactive RAGA Brand Logo (Click to Replay Reveal) */}
             <RagaLogoPill onClick={() => setShowSplash(true)} />
 
@@ -210,17 +210,17 @@ export const App: React.FC = () => {
               title="Change Spoken Language Hint / Auto Detect"
             >
               <Globe className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#00F5D4]" />
-              <span className="truncate max-w-[55px] sm:max-w-none">{SUPPORTED_LANGUAGES.find(l => l.code === language)?.nativeName || 'Auto'}</span>
+              <span className="truncate max-w-[52px] sm:max-w-none">{SUPPORTED_LANGUAGES.find(l => l.code === language)?.nativeName || 'Auto'}</span>
             </button>
           </div>
 
           {/* Right Controls: Workspace Switcher + Specs Trigger */}
-          <div className="flex items-center space-x-1.5 sm:space-x-2.5 pointer-events-auto">
+          <div className="flex items-center space-x-1.5 sm:space-x-2.5">
             {/* Dual Workspace Switcher */}
             <div className="flex items-center p-0.5 sm:p-1 bg-[#0F172A]/90 border border-slate-700/80 rounded-full shadow-2xl backdrop-blur-xl">
               <button
                 onClick={() => setWorkspaceMode('voice')}
-                className={`px-2.5 sm:px-3.5 py-1 rounded-full text-[11px] sm:text-xs font-bold transition-all flex items-center space-x-1 cursor-pointer ${
+                className={`px-2.5 sm:px-3.5 py-0.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-bold transition-all flex items-center space-x-1 cursor-pointer ${
                   workspaceMode === 'voice'
                     ? 'bg-[#FF2A55] text-white shadow-[2px_2px_0px_#000]'
                     : 'text-slate-400 hover:text-white'
@@ -231,7 +231,7 @@ export const App: React.FC = () => {
 
               <button
                 onClick={() => setWorkspaceMode('evidence')}
-                className={`px-2.5 sm:px-3.5 py-1 rounded-full text-[11px] sm:text-xs font-bold transition-all flex items-center space-x-1 cursor-pointer ${
+                className={`px-2.5 sm:px-3.5 py-0.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-bold transition-all flex items-center space-x-1 cursor-pointer ${
                   workspaceMode === 'evidence'
                     ? 'bg-[#00F5D4] text-black shadow-[2px_2px_0px_#000]'
                     : 'text-slate-400 hover:text-white'
@@ -244,7 +244,7 @@ export const App: React.FC = () => {
             {/* Technical Specs Trigger */}
             <button
               onClick={() => setIsSpecsOpen(true)}
-              className="btn-memphis px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-black uppercase flex items-center space-x-1"
+              className="btn-memphis px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-black uppercase flex items-center space-x-1"
             >
               <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current" />
               <span className="hidden sm:inline">Specs 🤓</span>
@@ -354,7 +354,7 @@ export const App: React.FC = () => {
       {/* VIEW 2: SYSTEM EVIDENCE & VERIFICATION DASHBOARD                          */}
       {/* ========================================================================= */}
       {workspaceMode === 'evidence' && (
-        <div className="pt-20 pb-16 min-h-screen bg-[#070A12] overflow-y-auto">
+        <div className="fixed inset-0 pt-16 sm:pt-20 pb-20 bg-[#070A12] overflow-y-auto z-20 select-text overscroll-contain">
           <SystemEvidenceView apiBase={API_BASE} />
         </div>
       )}
