@@ -14,7 +14,7 @@ import type { VoiceRAGResponse } from './types';
 const API_BASE = "";
 
 export const App: React.FC = () => {
-  const [isRevealed, setIsRevealed] = useState<boolean>(false);
+  const [isRevealed, setIsRevealed] = useState<boolean>(true);
   const [isListening, setIsListening] = useState<boolean>(false);
   const [glimmerTrigger, setGlimmerTrigger] = useState<number>(0);
   const [isSpecsOpen, setIsSpecsOpen] = useState<boolean>(false);
@@ -25,20 +25,14 @@ export const App: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [textInput, setTextInput] = useState('');
 
-  // Handle Mic Click (Drops mic down & triggers Goa glimmer reveal)
+  // Handle Mic Click (Drops mic down & toggles voice recording)
   const handleMicClick = () => {
     setErrorMsg(null);
-    if (!isRevealed) {
-      setIsRevealed(true);
-      setGlimmerTrigger((prev) => prev + 1);
+    if (!isListening) {
       setRagResult(null);
-      setIsListening(true);
-    } else {
-      if (!isListening) {
-        setRagResult(null);
-      }
-      setIsListening(!isListening);
+      setGlimmerTrigger((prev) => prev + 1);
     }
+    setIsListening((prev) => !prev);
   };
 
   // Handle Voice Transcript or Audio Blob Received
@@ -135,6 +129,8 @@ export const App: React.FC = () => {
     ? 'RESPONDING'
     : 'IDLE';
 
+  const isNight = isListening || isLoading;
+
   const sampleQuestions = [
     "What is the capital of Goa and official language?",
     "गोवा की राजधानी क्या है और आधिकारिक भाषा कौन सी है?",
@@ -149,6 +145,7 @@ export const App: React.FC = () => {
         isRevealed={isRevealed}
         glimmerTrigger={glimmerTrigger}
         sceneState={voiceSceneState}
+        isNight={isNight}
       />
 
       {/* 🎙️ 2. Hanging Studio Microphone (Positioned in highlighted upper-right/center) */}

@@ -6,12 +6,14 @@ interface GoaBeachEnvironmentProps {
   isRevealed: boolean;
   glimmerTrigger: number;
   sceneState?: VoiceSceneState;
+  isNight?: boolean;
 }
 
 export const GoaBeachEnvironment: React.FC<GoaBeachEnvironmentProps> = ({
   isRevealed,
   glimmerTrigger,
   sceneState = 'IDLE',
+  isNight = false,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animFrameRef = useRef<number | null>(null);
@@ -119,7 +121,7 @@ export const GoaBeachEnvironment: React.FC<GoaBeachEnvironmentProps> = ({
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden select-none bg-[#05070D]">
       {/* Living Multi-Layered Goa Beach Scene (Rendered when revealed) */}
-      {isRevealed && <GoaScene sceneState={sceneState} />}
+      {isRevealed && <GoaScene sceneState={sceneState} isNight={isNight} />}
 
       {/* Spotlight Canvas and Particle Effects Layer */}
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none z-10" />

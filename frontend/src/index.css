@@ -188,3 +188,127 @@
   border-radius: 3px;
   border: 1px solid #000;
 }
+
+/* ==========================================================================
+   DAY-TO-NIGHT SCENE TRANSITION SYSTEM
+   ========================================================================== */
+.scene-transition {
+  transition: opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 1.4s cubic-bezier(0.4, 0, 0.2, 1),
+              filter 1.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Day State (Warm Sunset) */
+.scene-day .sun-element {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+  transition: transform 1.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 1.2s ease;
+}
+
+.scene-day .day-sky {
+  opacity: 1;
+  transition: opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.scene-day .night-sky {
+  opacity: 0;
+  transition: opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.scene-day .star-cluster {
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+
+.scene-day .ocean-day {
+  opacity: 1;
+  transition: opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.scene-day .ocean-night {
+  opacity: 0;
+  transition: opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.scene-day .scene-backdrop-dimmer {
+  opacity: 0;
+  transition: opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Night State (Deep Indigo Sky + Sunk Sun + Stars + Moonlight) */
+.scene-night .sun-element {
+  transform: translate3d(0, 75px, 0);
+  opacity: 0;
+  transition: transform 1.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 1.0s ease;
+}
+
+.scene-night .day-sky {
+  opacity: 0;
+  transition: opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.scene-night .night-sky {
+  opacity: 1;
+  transition: opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.scene-night .star-cluster {
+  opacity: 0.95;
+  transition: opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.scene-night .ocean-day {
+  opacity: 0;
+  transition: opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.scene-night .ocean-night {
+  opacity: 1;
+  transition: opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.scene-night .scene-backdrop-dimmer {
+  opacity: 1;
+  transition: opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Star Twinkle Keyframes */
+@keyframes starTwinkle {
+  0%, 100% { opacity: 0.35; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+.star-twinkle-1 {
+  animation: starTwinkle 3.2s ease-in-out infinite;
+  transform-origin: center center;
+}
+
+.star-twinkle-2 {
+  animation: starTwinkle 4.5s ease-in-out infinite 1.2s;
+  transform-origin: center center;
+}
+
+.star-twinkle-3 {
+  animation: starTwinkle 2.8s ease-in-out infinite 0.6s;
+  transform-origin: center center;
+}
+
+/* Reduced Motion Override */
+@media (prefers-reduced-motion: reduce) {
+  .scene-transition,
+  .sun-element,
+  .day-sky,
+  .night-sky,
+  .star-cluster,
+  .ocean-day,
+  .ocean-night,
+  .scene-backdrop-dimmer {
+    transition: opacity 0.2s ease !important;
+    transform: none !important;
+  }
+  .star-twinkle-1,
+  .star-twinkle-2,
+  .star-twinkle-3 {
+    animation: none !important;
+  }
+}

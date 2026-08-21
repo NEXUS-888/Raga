@@ -287,7 +287,7 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
           backgroundRepeat: 'repeat-y',
           backgroundSize: '10px auto',
           backgroundPosition: 'center top',
-          transition: isDragging ? 'none' : 'height 400ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+          transition: isDragging ? 'none' : 'height 1400ms cubic-bezier(0.34, 1.56, 0.64, 1)',
         }}
         className="absolute z-10 pointer-events-none filter drop-shadow-[2px_2px_0px_rgba(0,0,0,0.8)]"
       />
@@ -387,7 +387,7 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
           transform: 'translateX(-50%)',
           top: `${currentMicY}px`,
           width: '134px',
-          transition: isDragging ? 'none' : 'top 400ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+          transition: isDragging ? 'none' : 'top 1400ms cubic-bezier(0.34, 1.56, 0.64, 1)',
         }}
         onClick={handleMicActivate}
         onPointerDown={handlePointerDown}
@@ -411,16 +411,22 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
           </div>
         )}
 
-        {/* Microphone Body with Top Collar Anchor */}
+        {/* Microphone Body with Top Collar Anchor & Intense Listening Radiance */}
         <div
-          className="relative w-full filter drop-shadow-[8px_8px_0px_rgba(0,0,0,0.85)] group-hover:scale-105 group-active:scale-95 transition-transform duration-150"
-          style={{ transform: `scale(${pulseScale})`, transformOrigin: '49% 0px' }}
+          className="relative w-full group-hover:scale-105 group-active:scale-95 transition-all duration-300"
+          style={{
+            transform: `scale(${pulseScale})`,
+            transformOrigin: '49% 0px',
+            filter: isListening
+              ? 'drop-shadow(0 0 30px #00F5D4) drop-shadow(0 0 60px rgba(0, 245, 212, 0.6)) drop-shadow(8px 8px 0px rgba(0,0,0,0.9))'
+              : 'drop-shadow(8px 8px 0px rgba(0,0,0,0.85))',
+          }}
         >
-          {/* Soundwave Aura when Recording */}
+          {/* Radiant Ambient Aura when Recording (Sole light source in night) */}
           {isListening && (
             <div
-              style={{ transform: `scale(${1 + volumeLevel * 1.3})` }}
-              className="absolute inset-0 rounded-3xl bg-[#FFE500]/30 blur-md transition-transform duration-75 pointer-events-none"
+              style={{ transform: `scale(${1.2 + volumeLevel * 1.5})` }}
+              className="absolute -inset-4 rounded-full bg-[#00F5D4]/25 blur-xl transition-transform duration-75 pointer-events-none"
             />
           )}
 

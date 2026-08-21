@@ -4,6 +4,7 @@ import type { VoiceSceneState } from './SceneAnimationManager';
 
 interface SkyAndSunsetProps {
   sceneState: VoiceSceneState;
+  isNight?: boolean;
 }
 
 export const SkyAndSunset: React.FC<SkyAndSunsetProps> = ({ sceneState }) => {
@@ -74,7 +75,7 @@ export const SkyAndSunset: React.FC<SkyAndSunsetProps> = ({ sceneState }) => {
     };
   }, []);
 
-  // Reactive state response
+  // Reactive Voice AI State response
   useEffect(() => {
     if (!sunHaloRef.current) return;
     if (sceneState === 'PROCESSING') {
@@ -110,7 +111,7 @@ export const SkyAndSunset: React.FC<SkyAndSunsetProps> = ({ sceneState }) => {
         className="w-full h-full"
       >
         <defs>
-          {/* Sunset Gradient */}
+          {/* Day Sunset Sky Gradient */}
           <linearGradient id="goaSkyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#1B0A2A" />
             <stop offset="25%" stopColor="#4A154B" />
@@ -118,6 +119,15 @@ export const SkyAndSunset: React.FC<SkyAndSunsetProps> = ({ sceneState }) => {
             <stop offset="70%" stopColor="#E0533C" />
             <stop offset="85%" stopColor="#F79D38" />
             <stop offset="100%" stopColor="#FFE066" />
+          </linearGradient>
+
+          {/* Deep Night Sky Gradient (Indigo & Violet) */}
+          <linearGradient id="nightSkyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#04010A" />
+            <stop offset="35%" stopColor="#0A041A" />
+            <stop offset="65%" stopColor="#12082B" />
+            <stop offset="85%" stopColor="#1E0B3C" />
+            <stop offset="100%" stopColor="#280F4A" />
           </linearGradient>
 
           {/* Sun Halo Glow Gradient */}
@@ -146,10 +156,50 @@ export const SkyAndSunset: React.FC<SkyAndSunsetProps> = ({ sceneState }) => {
           </linearGradient>
         </defs>
 
-        {/* 1. Sky Canvas */}
-        <rect width="1920" height="1080" fill="url(#goaSkyGrad)" />
+        {/* 1. Day Sunset Sky Canvas */}
+        <rect width="1920" height="1080" fill="url(#goaSkyGrad)" className="day-sky" />
 
-        {/* 2. Distant Clouds (Upper Atmosphere) */}
+        {/* 2. Deep Night Sky Canvas (Crossfaded on mic pull) */}
+        <rect width="1920" height="1080" fill="url(#nightSkyGrad)" className="night-sky" />
+
+        {/* 3. Twinkling Staggered Night Stars (Fade in during night state) */}
+        <g className="star-cluster" fill="#FFFDF8">
+          {/* Constellation Group 1 */}
+          <g className="star-twinkle-1">
+            <circle cx="180" cy="90" r="1.8" />
+            <circle cx="320" cy="140" r="2.2" />
+            <circle cx="540" cy="80" r="1.5" />
+            <circle cx="720" cy="120" r="2.0" />
+            <circle cx="1140" cy="95" r="1.6" />
+            <circle cx="1380" cy="130" r="2.2" />
+            <circle cx="1620" cy="75" r="1.8" />
+            <circle cx="1780" cy="110" r="2.0" />
+          </g>
+
+          {/* Constellation Group 2 */}
+          <g className="star-twinkle-2">
+            <circle cx="240" cy="170" r="1.4" />
+            <circle cx="460" cy="190" r="2.0" />
+            <circle cx="860" cy="90" r="2.4" />
+            <circle cx="1020" cy="150" r="1.5" />
+            <circle cx="1260" cy="70" r="1.9" />
+            <circle cx="1510" cy="160" r="2.2" />
+            <circle cx="1710" cy="180" r="1.6" />
+          </g>
+
+          {/* Constellation Group 3 */}
+          <g className="star-twinkle-3">
+            <circle cx="110" cy="220" r="1.6" />
+            <circle cx="380" cy="240" r="1.3" />
+            <circle cx="640" cy="160" r="2.1" />
+            <circle cx="950" cy="110" r="1.7" />
+            <circle cx="1320" cy="210" r="2.0" />
+            <circle cx="1580" cy="230" r="1.5" />
+            <circle cx="1850" cy="160" r="1.8" />
+          </g>
+        </g>
+
+        {/* 4. Distant Clouds (Upper Atmosphere) */}
         <g ref={cloud3Ref} opacity="0.6">
           <path
             d="M 150 180 Q 220 140 310 160 Q 390 120 480 150 Q 560 140 620 180 Q 660 210 600 230 Q 300 240 150 180 Z"
@@ -168,9 +218,8 @@ export const SkyAndSunset: React.FC<SkyAndSunsetProps> = ({ sceneState }) => {
           />
         </g>
 
-        {/* 3. Sunset Sun & Halo */}
-        {/* Sun Position: X: 960 (center-right horizon), Y: 560 */}
-        <g id="sunGroup">
+        {/* 5. Sunset Sun & Halo (Sinks smoothly below horizon on mic pull) */}
+        <g id="sunGroup" className="sun-element">
           {/* Outer Sun Corona */}
           <circle
             ref={sunHaloRef}
@@ -182,7 +231,7 @@ export const SkyAndSunset: React.FC<SkyAndSunsetProps> = ({ sceneState }) => {
           />
 
           {/* Atmospheric Light Rays Haze */}
-          <g ref={sunRaysRef} opacity="0.3">
+          <g ref={sunRaysRef} opacity="0.3" className="day-sky">
             <polygon points="960,560 620,1080 1300,1080" fill="url(#duskHaze)" />
           </g>
 
@@ -199,7 +248,7 @@ export const SkyAndSunset: React.FC<SkyAndSunsetProps> = ({ sceneState }) => {
           />
         </g>
 
-        {/* 4. Lower Foreground Clouds */}
+        {/* 6. Lower Foreground Clouds */}
         <g ref={cloud1Ref} opacity="0.85">
           <path
             d="M -40 380 Q 90 330 220 350 Q 340 310 460 350 Q 550 380 500 420 Q 200 430 -40 380 Z"
