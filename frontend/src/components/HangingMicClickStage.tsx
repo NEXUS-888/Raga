@@ -117,49 +117,7 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
     setLiveTranscript('');
     setAudioDetected(false);
 
-    // 1. Microphone stream for PCM audio & volume meter
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-      });
-      streamRef.current = stream;
-
-      const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioCtxClass) {
-        const audioCtx = new AudioCtxClass();
-        if (audioCtx.state === 'suspended') {
-          await audioCtx.resume();
-        }
-        audioCtxRef.current = audioCtx;
-
-        const analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 64;
-        analyser.smoothingTimeConstant = 0.35;
-        analyserRef.current = analyser;
-
-        const source = audioCtx.createMediaStreamSource(stream);
-        source.connect(analyser);
-
-        const processor = audioCtx.createScriptProcessor(4096, 1, 1);
-        processor.onaudioprocess = (e) => {
-          const inputData = e.inputBuffer.getChannelData(0);
-          pcmChunksRef.current.push(new Float32Array(inputData));
-        };
-        source.connect(processor);
-        processor.connect(audioCtx.destination);
-        processorRef.current = processor;
-
-        trackMicrophoneVolume();
-      }
-    } catch (err) {
-      console.warn("Microphone access notice:", err);
-    }
-
-    // 2. Initialize Web Speech Recognition
+    // 1. Initialize Web Speech Recognition FIRST (synchronously on user gesture)
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
       try {
@@ -212,6 +170,48 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
         console.warn("Speech recognition start notice:", err);
       }
     }
+
+    // 2. Microphone stream for PCM audio & volume meter
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+      streamRef.current = stream;
+
+      const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtxClass) {
+        const audioCtx = new AudioCtxClass();
+        if (audioCtx.state === 'suspended') {
+          await audioCtx.resume();
+        }
+        audioCtxRef.current = audioCtx;
+
+        const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 64;
+        analyser.smoothingTimeConstant = 0.2;
+        analyserRef.current = analyser;
+
+        const source = audioCtx.createMediaStreamSource(stream);
+        source.connect(analyser);
+
+        const processor = audioCtx.createScriptProcessor(4096, 1, 1);
+        processor.onaudioprocess = (e) => {
+          const inputData = e.inputBuffer.getChannelData(0);
+          pcmChunksRef.current.push(new Float32Array(inputData));
+        };
+        source.connect(processor);
+        processor.connect(audioCtx.destination);
+        processorRef.current = processor;
+
+        trackMicrophoneVolume();
+      }
+    } catch (err) {
+      console.warn("Microphone access notice:", err);
+    }
   };
 
   const trackMicrophoneVolume = () => {
@@ -229,9 +229,9 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
         sum += data[i];
       }
       const avg = sum / (data.length * 255);
-      setVolumeLevel(avg);
+      setVolumeLevel(Math.min(1.0, avg * 2.5));
 
-      if (avg > 0.04) {
+      if (avg > 0.015) {
         setAudioDetected(true);
       }
     };
