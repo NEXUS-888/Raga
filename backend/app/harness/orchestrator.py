@@ -167,7 +167,7 @@ class PipelineOrchestrator:
 
         # Step 4: Ultra-Low Latency LLM Generation
         gen_t0 = time.perf_counter()
-        is_domain_match = (guard_report.topic.reason in ["in_domain_rag", "in_domain_query"]) and bool(chunks)
+        is_domain_match = (guard_report.topic.reason.startswith("in_domain") or guard_report.topic.passed) and bool(chunks)
         is_general = not is_domain_match
         try:
             answer, gen_ms, gen_meta = await self.retry_policy.execute_with_retry(

@@ -8,26 +8,45 @@ class TopicGuard:
     Detects off-topic queries and triggers structured abstention.
     """
     def __init__(self):
-        self.default_domain_keywords = [
-            'goa', 'panaji', 'panjim', 'vasco', 'margao', 'konkani', 'marathi',
-            'food', 'dish', 'dishes', 'cuisine', 'curry', 'fish', 'rice', 'seafood', 'prawn',
-            'vindaloo', 'xacuti', 'bebinca', 'feni', 'poi', 'balchao', 'cafreal',
-            'beach', 'beaches', 'baga', 'calangute', 'anjuna', 'palolem', 'colva',
-            'church', 'basilica', 'bom jesus', 'cathedral', 'fort', 'aguada', 'chapora', 'dudhsagar',
-            'hello', 'hi', 'hey', 'namaste', 'greeting', 'welcome', 'who are you',
-            'retrieval', 'rag', 'vector db', 'embedding', 'hnsw', 'bm25',
-            'sarvam', 'elevenlabs', 'saaras', 'speech-to-text',
-            'vitamin d', 'photosynthesis', 'monsoon', 'kerala monsoon',
-            'राजधानी', 'भाषा', 'गोवा', 'मानसून', 'मौसम', 'वर्षा', 'भारत', 'व्यंजन', 'भोजन', 'खान-पान', 'समुद्र तट'
+        self.goa_keywords = {
+            'goa', 'goan', 'panaji', 'panjim', 'vasco', 'margao', 'konkani', 'marathi',
+            'baga', 'calangute', 'anjuna', 'palolem', 'colva', 'vagator', 'arambol',
+            'aguada', 'chapora', 'reis magos', 'bom jesus', 'cathedral', 'dudhsagar', 'mandovi',
+            'bebinca', 'feni', 'xacuti', 'vindaloo', 'balchao', 'cafreal', 'poi', 'sol kadi',
+            'monsoon', 'kerala monsoon', 'weather', 'climate',
+            'गोवा', 'पणजी', 'कोंकणी', 'मराठी', 'बेबिंका', 'फेनी', 'जाकुती', 'विंदालू', 'अगुआड़ा', 'दूधसागर', 'खान-पान'
+        }
+
+        self.generic_goa_intents = {
+            'beach', 'beaches', 'fort', 'forts', 'church', 'churches', 'waterfall',
+            'seafood', 'fish curry', 'cuisine', 'dishes', 'traditional food',
+            'समुद्र तट', 'बीच', 'किला', 'किले', 'चर्च', 'झरना', 'व्यंजन', 'भोजन'
+        }
+
+        self.outside_entities = {
+            'india', 'karnataka', 'kerala', 'maharashtra', 'delhi', 'mumbai', 'bangalore', 'bengaluru', 'tamil nadu',
+            'france', 'paris', 'japan', 'tokyo', 'china', 'usa', 'america', 'london', 'uk', 'germany',
+            'tesla', 'spacex', 'elon musk', 'microsoft', 'google', 'apple', 'amazon',
+            'cricket', 'football', 'world cup', 'cake', 'astrology', 'horoscope', 'minister', 'president', 'prime minister',
+            'भारत', 'कर्नाटक', 'दिल्ली', 'मुंबई'
+        }
+
+        self.greetings_phrases = [
+            'hello', 'hi', 'hey', 'namaste', 'good morning', 'good evening', 'good afternoon',
+            'how are you', 'who are you', 'what can you do', 'what is up', 'whats up', 'tell me a joke',
+            'thank you', 'thanks', 'bye', 'goodbye', 'नमस्ते', 'हेलो'
         ]
 
-    def evaluate_topic(self, query: str, domain_keywords: Optional[List[str]] = None) -> GuardrailVerdict:
-        is_strict_domain_test = domain_keywords is not None
-        keywords = domain_keywords or self.default_domain_keywords
-        q_lower = query.lower()
-        q_words = re.findall(r'\w+', q_lower)
+    def _match_token(self, token: str, text: str) -> bool:
+        if any(ord(c) > 127 for c in token):
+            return token in text
+        return bool(re.search(r'\b' + re.escape(token) + r'\b', text))
 
-        if not q_words:
+    def evaluate_topic(self, query: str, domain_keywords: Optional[List[str]] = None) -> GuardrailVerdict:
+        q_lower = query.lower().strip()
+        words = set(re.findall(r'\w+', q_lower))
+
+        if not words and not q_lower:
             return GuardrailVerdict(
                 passed=False,
                 flagged=True,
@@ -36,67 +55,72 @@ class TopicGuard:
                 action="refuse"
             )
 
-        # Check keyword matches
-        matches = [kw for kw in keywords if kw.lower() in q_lower]
-        match_ratio = len(matches) / max(1, len(q_words))
-
-        # Explicit off-topic indicators (for unit tests / harmful off-topic requests / out-of-domain entities)
-        off_topic_indicators = [
-            'astrology', 'horoscope', 'crypto trading bot', 'casino roulette', 'secret recipe to bake a 3-layer',
-            'karnataka', 'france', 'japan', 'tesla', 'spacex', 'elon musk', 'tokyo', 'paris'
-        ]
-        for ind in off_topic_indicators:
-            if ind in q_lower and not any(g in q_lower for g in ['goa', 'panaji', 'konkani']):
-                return GuardrailVerdict(
-                    passed=False,
-                    flagged=True,
-                    score=0.1,
-                    reason=f"off_topic: query topic '{ind}' outside dataset domain",
-                    action="refuse"
-                )
-
-        # Strict domain test mode (e.g. unit tests asserting specific domain keywords)
-        if is_strict_domain_test:
-            if not matches and 'cake' in q_lower:
-                return GuardrailVerdict(
-                    passed=False,
-                    flagged=True,
-                    score=0.1,
-                    reason="off_topic: query topic 'cake' outside dataset domain",
-                    action="refuse"
-                )
-            if matches or match_ratio > 0.05:
+        # Custom domain keyword override (e.g. test suites)
+        if domain_keywords is not None:
+            if any(self._match_token(dk, q_lower) for dk in domain_keywords):
                 return GuardrailVerdict(
                     passed=True,
                     flagged=False,
-                    score=min(1.0, 0.5 + len(matches) * 0.2),
+                    score=0.90,
                     reason="in_domain_query",
                     action="allow"
                 )
             return GuardrailVerdict(
                 passed=False,
                 flagged=True,
-                score=0.2,
-                reason="off_topic: query outside test domain",
+                score=0.10,
+                reason="off_topic: query_outside_test_domain",
                 action="refuse"
             )
 
-        # Production Dual-Mode: If in-domain, mark as domain_rag; otherwise route to general knowledge
-        is_greeting = any(g in q_lower for g in ['hi', 'hello', 'hey', 'namaste', 'greeting', 'who are you', 'how are you', 'नमस्ते', 'हेलो', 'welcome'])
-        if matches or match_ratio > 0.05 or is_greeting:
+        # 1. Conversational Greetings & AI Meta
+        if any(q_lower == g or q_lower.startswith(g + ' ') or (' ' + g + ' ') in (' ' + q_lower + ' ') for g in self.greetings_phrases):
+            if not any(k in q_lower for k in ['capital', 'beach', 'food', 'fort', 'india', 'karnataka', 'france', 'भारत']):
+                return GuardrailVerdict(
+                    passed=True,
+                    flagged=False,
+                    score=0.95,
+                    reason="conversational_greeting",
+                    action="allow"
+                )
+
+        # 2. Outside entities without explicit Goa mention -> Strict Refusal
+        has_outside = any(self._match_token(oe, q_lower) for oe in self.outside_entities)
+        has_goa = any(self._match_token(gk, q_lower) for gk in ['goa', 'goan', 'गोवा'])
+        if has_outside and not has_goa:
+            return GuardrailVerdict(
+                passed=False,
+                flagged=True,
+                score=0.05,
+                reason="off_topic: non_goa_entity_query",
+                action="refuse"
+            )
+
+        # 3. Explicit Goa specific domain keywords -> Allow
+        if any(self._match_token(gk, q_lower) for gk in self.goa_keywords):
             return GuardrailVerdict(
                 passed=True,
                 flagged=False,
-                score=min(1.0, 0.5 + len(matches) * 0.2),
-                reason="in_domain_rag",
+                score=0.90,
+                reason="in_domain_goa_rag",
                 action="allow"
             )
 
-        # General Knowledge Queries (science, technology, world history, coding, trivia, etc.)
+        # 4. Contextual domain intents (capital, language, beaches, forts, food) -> Allow
+        if any(self._match_token(gi, q_lower) for gi in self.generic_goa_intents) or 'capital' in words or 'language' in words or 'राजधानी' in q_lower or 'भाषा' in q_lower:
+            return GuardrailVerdict(
+                passed=True,
+                flagged=False,
+                score=0.85,
+                reason="in_domain_contextual_rag",
+                action="allow"
+            )
+
+        # 5. Strict Default: Any question outside Goa domain is refused
         return GuardrailVerdict(
-            passed=True,
-            flagged=False,
-            score=0.85,
-            reason="general_knowledge_query",
-            action="allow"
+            passed=False,
+            flagged=True,
+            score=0.10,
+            reason="off_topic: query_outside_indexed_goa_dataset",
+            action="refuse"
         )
