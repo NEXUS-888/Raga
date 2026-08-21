@@ -7,7 +7,7 @@ class RecursiveHierarchicalChunker(BaseChunker):
     Splits text hierarchically using a priority order of delimiters
     (paragraphs -> sentences -> clauses -> words) to keep semantic coherent blocks.
     """
-    def __init__(self, target_chunk_size: int = 250, overlap_size: int = 40):
+    def __init__(self, target_chunk_size: int = 450, overlap_size: int = 50):
         self.target_chunk_size = target_chunk_size
         self.overlap_size = overlap_size
         self.separators = ["\n\n", "\n", ". ", "? ", "! ", "; ", ", ", " "]
@@ -58,7 +58,10 @@ class RecursiveHierarchicalChunker(BaseChunker):
             if total_len + s_len > self.target_chunk_size:
                 if current_doc:
                     doc_text = "".join(current_doc).strip()
-                    if doc_text:
+                    # Do not create isolated heading chunks
+                    lines = [l.strip() for l in doc_text.split("\n") if l.strip()]
+                    has_body = any(not l.startswith("#") for l in lines)
+                    if doc_text and has_body:
                         merged.append(doc_text)
                     
                     # Apply overlap: keep suffix of previous chunks
@@ -80,6 +83,10 @@ class RecursiveHierarchicalChunker(BaseChunker):
         for idx, content in enumerate(raw_chunks):
             content_clean = content.strip()
             if not content_clean:
+                continue
+            # Ensure chunk has body content or merge
+            lines = [l.strip() for l in content_clean.split("\n") if l.strip()]
+            if not any(not l.startswith("#") for l in lines):
                 continue
             chunk_meta = dict(metadata or {})
             chunk_meta.update({

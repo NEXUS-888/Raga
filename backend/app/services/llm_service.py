@@ -129,12 +129,10 @@ class LLMService:
         
         # Priority order of active models on Groq
         candidate_models = [
-            settings.llm_model,
             "allam-2-7b",
-            "openai/gpt-oss-120b",
             "openai/gpt-oss-20b",
-            "qwen/qwen3.6-27b",
-            "groq/compound-mini"
+            "openai/gpt-oss-120b",
+            settings.llm_model,
         ]
         # Deduplicate while preserving order
         seen = set()
@@ -223,10 +221,20 @@ class LLMService:
 
         # Domain synonym expansions
         synonyms = {
+            "places": ["baga", "calangute", "anjuna", "palolem", "colva", "aguada", "chapora", "bom jesus", "dudhsagar", "beach", "fort", "church", "tourism", "attractions", "places", "visit"],
+            "place": ["baga", "calangute", "anjuna", "palolem", "colva", "aguada", "chapora", "bom jesus", "dudhsagar", "beach", "fort", "church", "tourism", "attractions", "places", "visit"],
+            "visit": ["baga", "calangute", "anjuna", "palolem", "colva", "aguada", "chapora", "bom jesus", "dudhsagar", "beach", "fort", "church", "tourism", "attractions", "places", "visit"],
+            "tourism": ["tourism", "tourist", "travel", "attractions", "places", "visit", "baga", "calangute", "aguada", "bom jesus"],
+            "travel": ["tourism", "tourist", "travel", "attractions", "places", "visit", "baga", "calangute", "aguada", "bom jesus"],
             "food": ["curry", "rice", "dish", "dishes", "cuisine", "vindaloo", "xacuti", "bebinca", "cafreal", "balchao", "poi", "feni", "food"],
             "eat": ["curry", "rice", "dish", "dishes", "cuisine", "vindaloo", "xacuti", "bebinca", "cafreal", "balchao", "food"],
+            "dish": ["curry", "rice", "dish", "dishes", "cuisine", "vindaloo", "xacuti", "bebinca", "cafreal", "balchao", "food"],
             "beach": ["baga", "calangute", "anjuna", "palolem", "colva", "vagator", "arambol", "coast", "beach", "beaches"],
+            "beaches": ["baga", "calangute", "anjuna", "palolem", "colva", "vagator", "arambol", "coast", "beach", "beaches"],
             "fort": ["aguada", "chapora", "reis magos", "fort", "forts", "lighthouse"],
+            "forts": ["aguada", "chapora", "reis magos", "fort", "forts", "lighthouse"],
+            "church": ["church", "basilica", "bom jesus", "se cathedral", "xavier", "unesco"],
+            "churches": ["church", "basilica", "bom jesus", "se cathedral", "xavier", "unesco"],
             "capital": ["panaji", "panjim", "vasco", "capital"],
             "waterfall": ["dudhsagar", "mandovi", "waterfall", "falls"],
             "drink": ["feni", "sol kadi", "cashew", "beverage", "drink"]
@@ -250,11 +258,17 @@ class LLMService:
                     for qw in query_words:
                         if qw in s_lower:
                             s_score += 4.0
-                        # Check synonym matches
+                        # Check synonym matches (boost for each concrete matching term)
                         for syn_key, syn_vals in synonyms.items():
-                            if qw == syn_key and any(sv in s_lower for sv in syn_vals):
-                                s_score += 2.5
+                            if qw == syn_key:
+                                matched_syns = sum(1 for sv in syn_vals if sv in s_lower)
+                                if matched_syns > 0:
+                                    s_score += 3.5 * min(3, matched_syns)
                                 
+                    # Penalize climate/weather sentences if query is not about climate/weather
+                    if any(w in s_lower for w in ["climate", "monsoon", "rainfall", "humidity", "weather"]) and not any(w in norm_query for w in ["climate", "monsoon", "rainfall", "rain", "weather", "season"]):
+                        s_score *= 0.2
+
                     if s_score > 0:
                         c_score += s_score
                         c_sentences.append((s_score, clean_s))
@@ -266,7 +280,9 @@ class LLMService:
         # Sort chunks by highest cumulative relevance score
         chunk_evals.sort(key=lambda x: x[0], reverse=True)
         if chunk_evals and chunk_evals[0][0] >= 2.0:
-            top_chunk_sentences = [s for _, s in chunk_evals[0][1][:2]]
+            top_chunk_sentences = [s for score, s in chunk_evals[0][1] if score >= 2.0][:2]
+            if not top_chunk_sentences and chunk_evals[0][1]:
+                top_chunk_sentences = [chunk_evals[0][1][0][1]]
             return " ".join(top_chunk_sentences)
 
         # If the query is about non-Goa specific subjects, cleanly abstain
