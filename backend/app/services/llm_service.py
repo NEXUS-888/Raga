@@ -302,7 +302,9 @@ class LLMService:
             "markets": ["market", "markets", "flea market", "anjuna", "mapusa", "arpora", "बाजार"],
             "island": ["island", "islands", "divar", "chorao", "mandovi", "टापू", "द्वीप"],
             "islands": ["island", "islands", "divar", "chorao", "mandovi", "टापू", "द्वीप"],
-            "quarter": ["fontainhas", "latin quarter", "panaji", "balcoes", "portuguese"]
+            "quarter": ["fontainhas", "latin quarter", "panaji", "balcoes", "portuguese"],
+            "geography": ["geography", "coast", "konkan", "southwestern", "border", "western ghats", "coastal", "rivers", "arabian sea", "location", "located", "भूगोल", "तट", "क्षेत्र"],
+            "location": ["geography", "coast", "konkan", "southwestern", "border", "western ghats", "location", "located", "स्थिति", "कहाँ"]
         }
 
         # Specific entity extractors for ultra-precise grounding
@@ -333,43 +335,76 @@ class LLMService:
                     
                     s_score = 0.0
                     for qw in query_words:
-                        # Whole-word regex match to avoid false substring triggers
+                        # Downweight generic filler terms like "goa" so specific topic words dominate
+                        weight = 0.5 if qw in ["goa", "goan", "state", "tell", "know", "about", "what", "is", "are", "the", "of", "in", "गोवा", "राज्य"] else 4.0
                         if re.search(r'\b' + re.escape(qw) + r'\b', s_lower):
-                            s_score += 4.0
+                            s_score += weight
                         # Check synonym matches (boost for each concrete matching term)
                         for syn_key, syn_vals in synonyms.items():
                             if qw == syn_key:
                                 matched_syns = sum(1 for sv in syn_vals if re.search(r'\b' + re.escape(sv) + r'\b', s_lower))
                                 if matched_syns > 0:
-                                    s_score += 3.5 * min(3, matched_syns)
+                                    s_score += 4.0 * min(3, matched_syns)
 
                     # Major boost for specific target entity mentions
                     for te in target_entities:
                         if te in s_lower:
                             s_score += 15.0
 
-                    # Food intent alignment
+                    # 1. Geography & Location intent alignment
+                    is_geo_query = any(w in norm_query for w in ["geography", "location", "located", "region", "coast", "konkan", "border", "area", "भूगोल", "स्थिति"])
+                    if is_geo_query:
+                        if any(w in s_lower for w in ["southwestern coast", "konkan region", "located on", "arabian sea", "capital", "panaji", "vasco da gama", "border"]):
+                            s_score += 20.0
+                        if any(w in s_lower for w in ["operation vijay", "liberation", "flea market", "curry", "fish", "pork vindaloo"]):
+                            s_score *= 0.05
+
+                    # 2. History & Liberation intent alignment
+                    is_history_query = any(w in norm_query for w in ["history", "historic", "liberation", "operation vijay", "portuguese", "1961", "1510", "kadamba", "bhoja", "इतिहास", "आजादी"])
+                    if is_history_query:
+                        if any(w in s_lower for w in ["operation vijay", "liberation", "1961", "portuguese", "kadamba", "1510", "conquered", "statehood"]):
+                            s_score += 20.0
+                        if any(w in s_lower for w in ["fish curry", "poi", "bebinca", "baga", "calangute"]):
+                            s_score *= 0.05
+
+                    # 3. Temples & Spiritual Heritage intent alignment
+                    is_temple_query = any(w in norm_query for w in ["temple", "temples", "mandir", "shantadurga", "mangueshi", "tambdi surla", "mahalasa", "damodar", "kamakshi", "nagueshi", "मंदिर"])
+                    if is_temple_query:
+                        if any(w in s_lower for w in ["mangueshi", "shanta durga", "tambdi surla", "deepastambha", "temple", "temples", "shiva", "vishnu", "mahalasa", "kadamba"]):
+                            s_score += 20.0
+                        if any(w in s_lower for w in ["capital", "southwestern coast", "operation vijay", "curry", "fish"]):
+                            s_score *= 0.05
+
+                    # 4. Festivals & Culture intent alignment
+                    is_festival_query = any(w in norm_query for w in ["festival", "festivals", "shigmo", "carnival", "sao joao", "bonderam", "mando", "त्योहार", "उत्सव"])
+                    if is_festival_query:
+                        if any(w in s_lower for w in ["shigmo", "carnival", "sao joao", "bonderam", "king momo", "kopel", "festival", "festivals"]):
+                            s_score += 20.0
+                        if any(w in s_lower for w in ["capital", "southwestern coast", "fort", "lighthouse"]):
+                            s_score *= 0.05
+
+                    # 5. Food intent alignment
                     is_food_query = any(w in norm_query for w in ["food", "foods", "dish", "dishes", "cuisine", "cuisines", "eat", "curry", "seafood", "खाना", "व्यंजन", "भोजन"])
                     if is_food_query:
                         if any(w in s_lower for w in ["curry", "fish", "rice", "vindaloo", "xacuti", "bebinca", "feni", "cafreal", "balchao", "poi", "cuisine", "dish", "special food"]):
                             s_score += 15.0
-                        if any(w in s_lower for w in ["capital", "southwestern coast", "largest city", "konkan region", "defense bastions", "lighthouse"]):
+                        if any(w in s_lower for w in ["capital", "southwestern coast", "largest city", "konkan region", "defense bastions", "lighthouse", "operation vijay"]):
                             s_score *= 0.05
 
-                    # Beach intent alignment
+                    # 6. Beach intent alignment
                     is_beach_query = any(w in norm_query for w in ["beach", "beaches", "समुद्र तट", "बीच"])
                     if is_beach_query:
                         if any(w in s_lower for w in ["baga", "calangute", "anjuna", "palolem", "colva", "vagator", "arambol", "beach", "beaches"]):
                             s_score += 15.0
-                        if any(w in s_lower for w in ["capital", "southwestern coast", "reservoir", "fort"]):
+                        if any(w in s_lower for w in ["capital", "southwestern coast", "reservoir", "fort", "operation vijay"]):
                             s_score *= 0.1
 
-                    # Fort intent alignment
+                    # 7. Fort intent alignment
                     is_fort_query = any(w in norm_query for w in ["fort", "forts", "किला", "किले"])
                     if is_fort_query:
                         if any(w in s_lower for w in ["aguada", "chapora", "reis magos", "fort", "forts", "bastion"]):
                             s_score += 15.0
-                        if any(w in s_lower for w in ["curry", "fish", "beach", "cuisine"]):
+                        if any(w in s_lower for w in ["curry", "fish", "beach", "cuisine", "operation vijay"]):
                             s_score *= 0.1
                                 
                     # Penalize climate/weather sentences if query is not about climate/weather
