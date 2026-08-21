@@ -11,16 +11,20 @@ class TopicGuard:
         self.goa_keywords = {
             'goa', 'goan', 'panaji', 'panjim', 'vasco', 'margao', 'konkani', 'marathi',
             'baga', 'calangute', 'anjuna', 'palolem', 'colva', 'vagator', 'arambol',
-            'aguada', 'chapora', 'reis magos', 'bom jesus', 'cathedral', 'dudhsagar', 'mandovi',
+            'aguada', 'chapora', 'reis magos', 'bom jesus', 'cathedral', 'dudhsagar', 'mandovi', 'zuari',
             'bebinca', 'feni', 'xacuti', 'vindaloo', 'balchao', 'cafreal', 'poi', 'sol kadi',
+            'shantadurga', 'shanta durga', 'mangeshi', 'mangueshi', 'tambdi surla', 'mahalasa', 'damodar', 'kamakshi', 'nagueshi',
+            'shigmo', 'carnival', 'sao joao', 'bonderam', 'mando', 'fugdi', 'dhalo', 'ghumot',
+            'fontainhas', 'divar', 'chorao', 'mapusa', 'arpora', 'operation vijay', 'liberation',
             'monsoon', 'kerala monsoon', 'weather', 'climate',
-            'गोवा', 'पणजी', 'कोंकणी', 'मराठी', 'बेबिंका', 'फेनी', 'जाकुती', 'विंदालू', 'अगुआड़ा', 'दूधसागर', 'खान-पान'
+            'गोवा', 'पणजी', 'कोंकणी', 'मराठी', 'बेबिंका', 'फेनी', 'जाकुती', 'विंदालू', 'अगुआड़ा', 'दूधसागर', 'मंगेशी', 'शांतादुर्गा', 'तांबडी सुरला', 'शिगमो', 'खान-पान'
         }
 
         self.generic_goa_intents = {
-            'beach', 'beaches', 'fort', 'forts', 'church', 'churches', 'waterfall', 'waterfalls',
+            'beach', 'beaches', 'fort', 'forts', 'church', 'churches', 'temple', 'temples', 'mandir', 'waterfall', 'waterfalls',
             'food', 'foods', 'seafood', 'fish curry', 'cuisine', 'cuisines', 'dish', 'dishes', 'traditional food',
-            'समुद्र तट', 'बीच', 'किला', 'किले', 'चर्च', 'झरना', 'व्यंजन', 'भोजन', 'खान-पान'
+            'festival', 'festivals', 'culture', 'tradition', 'traditions', 'history', 'liberation', 'market', 'markets', 'island', 'islands',
+            'समुद्र तट', 'बीच', 'किला', 'किले', 'चर्च', 'मंदिर', 'त्योहार', 'उत्सव', 'झरना', 'व्यंजन', 'भोजन', 'खान-पान', 'संस्कृति', 'इतिहास'
         }
 
         self.outside_entities = {

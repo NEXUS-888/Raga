@@ -289,14 +289,29 @@ class LLMService:
             "राजधानी": ["पणजी", "panaji", "panjim", "राजधानी"],
             "भाषा": ["कोंकणी", "मराठी", "konkani", "marathi", "भाषा"],
             "waterfall": ["dudhsagar", "mandovi", "waterfall", "falls", "दूधसागर", "झरना"],
-            "drink": ["feni", "sol kadi", "cashew", "beverage", "drink", "फेनी", "सोल कढ़ी"]
+            "drink": ["feni", "sol kadi", "cashew", "beverage", "drink", "फेनी", "सोल कढ़ी"],
+            "temple": ["temple", "temples", "mangueshi", "shanta durga", "shantadurga", "tambdi surla", "mahalasa", "damodar", "kamakshi", "nagueshi", "deepastambha", "mandir", "मंदिर"],
+            "temples": ["temple", "temples", "mangueshi", "shanta durga", "shantadurga", "tambdi surla", "mahalasa", "damodar", "kamakshi", "nagueshi", "deepastambha", "mandir", "मंदिर"],
+            "mandir": ["temple", "temples", "mangueshi", "shanta durga", "shantadurga", "tambdi surla", "mandir", "मंदिर"],
+            "मंदिर": ["temple", "temples", "mangueshi", "shanta durga", "shantadurga", "tambdi surla", "mandir", "मंदिर"],
+            "festival": ["festival", "festivals", "shigmo", "carnival", "sao joao", "bonderam", "mando", "त्योहार", "उत्सव"],
+            "festivals": ["festival", "festivals", "shigmo", "carnival", "sao joao", "bonderam", "mando", "त्योहार", "उत्सव"],
+            "history": ["history", "portuguese", "kadamba", "bhoja", "operation vijay", "liberation", "1961", "1510", "इतिहास"],
+            "liberation": ["liberation", "operation vijay", "1961", "portuguese", "december 19", "आजादी", "मुक्ति"],
+            "market": ["market", "markets", "flea market", "anjuna", "mapusa", "arpora", "बाजार"],
+            "markets": ["market", "markets", "flea market", "anjuna", "mapusa", "arpora", "बाजार"],
+            "island": ["island", "islands", "divar", "chorao", "mandovi", "टापू", "द्वीप"],
+            "islands": ["island", "islands", "divar", "chorao", "mandovi", "टापू", "द्वीप"],
+            "quarter": ["fontainhas", "latin quarter", "panaji", "balcoes", "portuguese"]
         }
 
         # Specific entity extractors for ultra-precise grounding
         specific_entities = [
             "aguada", "chapora", "reis magos", "bebinca", "feni", "dudhsagar",
             "baga", "calangute", "anjuna", "palolem", "colva", "xacuti", "vindaloo", "cafreal", "balchao",
-            "अगुआड़ा", "चापोरा", "रेइस मागस", "बेबिंका", "फेनी", "दूधसागर", "बागा", "कलंगूट", "अंजुना", "पालोलेम"
+            "mangueshi", "mangeshi", "shantadurga", "shanta durga", "tambdi surla", "mahalasa", "damodar", "kamakshi",
+            "shigmo", "carnival", "sao joao", "bonderam", "fontainhas", "divar", "chorao", "mapusa",
+            "अगुआड़ा", "चापोरा", "रेइस मागस", "बेबिंका", "फेनी", "दूधसागर", "बागा", "कलंगूट", "अंजुना", "पालोलेम", "मंगेशी", "शांतादुर्गा", "तांबडी सुरला", "शिगमो"
         ]
         target_entities = [e for e in specific_entities if e in norm_query]
 

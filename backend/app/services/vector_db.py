@@ -159,6 +159,14 @@ class HybridVectorDB:
             sparse_q = sparse_q.replace("beaches", "beach coast")
         if "forts" in sparse_q:
             sparse_q = sparse_q.replace("forts", "fort aguada chapora")
+        if "temples" in sparse_q or "temple" in sparse_q:
+            sparse_q = sparse_q.replace("temples", "temple mangueshi shanta durga tambdi surla mandir").replace("temple", "temple mangueshi shanta durga tambdi surla mandir")
+        if "festivals" in sparse_q or "festival" in sparse_q:
+            sparse_q = sparse_q.replace("festivals", "festival shigmo carnival sao joao bonderam").replace("festival", "festival shigmo carnival sao joao bonderam")
+        if "churches" in sparse_q or "church" in sparse_q:
+            sparse_q = sparse_q.replace("churches", "church bom jesus se cathedral").replace("church", "church bom jesus se cathedral")
+        if "history" in sparse_q or "liberation" in sparse_q:
+            sparse_q = sparse_q.replace("history", "history portuguese operation vijay 1961 kadamba").replace("liberation", "liberation operation vijay 1961")
 
         # 1. Dense Embedding & Vector Search
         t_dense_0 = time.perf_counter()

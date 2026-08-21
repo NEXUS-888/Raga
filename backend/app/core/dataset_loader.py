@@ -253,6 +253,84 @@ Chapora Fort, perched above the Chapora River and Vagator Beach, offers panorami
 Reis Magos Fort, built in 1551, is one of Goa's oldest restored defense bastions located near Panaji on the Mandovi River.
 """,
         "metadata": {"source": "ai4bharat/MSMARCO-XI", "domain": "history", "split": "train"}
+    },
+    {
+        "doc_id": "msmarco_xi_116",
+        "title": "Goan Temples: Shanta Durga, Mangueshi, Tambdi Surla, and Hindu Heritage",
+        "language": "en",
+        "content": """# TITLE: Famous Hindu Temples and Spiritual Heritage of Goa
+# SECTION: Mangueshi and Shanta Durga Temples in Ponda
+Goa is home to historic Hindu temples renowned for their distinct Goan temple architecture featuring multi-storied octagonal Deepastambhas (lamp towers).
+The iconic Mangueshi Temple in Priol (Ponda taluka) is dedicated to Lord Manguesh (an incarnation of Shiva) and features a grand 7-story Deepastambha and a sacred water tank.
+The revered Shanta Durga Temple in Kavlem (Ponda) is dedicated to Goddess Shantadurga, who mediated between Lord Vishnu and Lord Shiva to restore universal peace.
+
+# SECTION: Tambdi Surla Mahadev Temple and Other Historic Shrines
+The 12th-century Mahadev Temple at Tambdi Surla, built during the Kadamba Dynasty from carved black basalt stone, is the oldest surviving temple in Goa nestled in the Bhagwan Mahaveer Sanctuary.
+Other major Goan temples include the Mahalasa Narayani Temple in Mardol, Damodar Temple in Zambaulim, Kamakshi Temple in Shiroda, Nagueshi Temple in Bandora, and the ancient Saptakoteshwar Temple in Narve.
+""",
+        "metadata": {"source": "ai4bharat/MSMARCO-XI", "domain": "culture_and_religion", "split": "train"}
+    },
+    {
+        "doc_id": "msmarco_xi_117",
+        "title": "गोवा के प्रमुख मंदिर: मंगेशी, शांतादुर्गा और तांबडी सुरला",
+        "language": "hi",
+        "content": """# TITLE: गोवा के प्रसिद्ध हिंदू मंदिर और धार्मिक धरोहर
+# SECTION: मंगेशी और शांतादुर्गा मंदिर (फोंडा)
+गोवा के मंदिर अपनी अनूठी वास्तुकला और बहुमंजिला दीपास्तंभ (दीपस्तंभ) के लिए जाने जाते हैं।
+प्रियोल (फोंडा) में स्थित प्रसिद्ध मंगेशी मंदिर (Mangueshi Temple) भगवान शिव के अवतार मंगेश को समर्पित है और इसमें 7 मंजिला भव्य दीपस्तंभ है।
+कवलेम में स्थित शांतादुर्गा मंदिर (Shanta Durga Temple) देवी शांतादुर्गा को समर्पित है जिन्होंने भगवान विष्णु और शिव के बीच शांति स्थापित की थी।
+
+# SECTION: तांबडी सुरला और अन्य प्रमुख मंदिर
+12वीं शताब्दी का तांबडी सुरला महादेव मंदिर (Tambdi Surla Temple) कदंब राजवंश के काल का काले बेसाल्ट पत्थर से बना गोवा का सबसे प्राचीन जीवित मंदिर है।
+अन्य प्रमुख मंदिरों में मारडोल का महालसा नारायणी मंदिर, ज़ांबोलीम का दामोदर मंदिर और सिरोडा का कामाक्षी मंदिर शामिल हैं।
+""",
+        "metadata": {"source": "ai4bharat/MSMARCO-XI", "domain": "culture_and_religion", "split": "train"}
+    },
+    {
+        "doc_id": "msmarco_xi_118",
+        "title": "Goan Festivals, Culture, Music, and Traditions: Shigmo, Carnival, Sao Joao, and Mando",
+        "language": "en",
+        "content": """# TITLE: Goan Festivals, Culture, Music, and Traditions
+# SECTION: Shigmo, Carnival, and Sao Joao Festivals
+Shigmo (Shigmotsav) is the traditional Goan spring festival celebrated with vibrant street parades, traditional folk dances like Ghode Modni and Romtamel, and mythological tableaus.
+Goa Carnival is celebrated with colorful float parades, music, and the reign of King Momo before the season of Lent.
+The Sao Joao festival in June celebrates the feast of St. John the Baptist, where Goan youth wear floral crowns called 'Kopel' and joyfully jump into village wells.
+The Bonderam festival on Divar Island features a colorful flag parade commemorating local village boundary traditions.
+
+# SECTION: Goan Music, Dance, and Art
+Goan folk culture includes Fugdi and Dhalo performed by women during harvest, Dekhnni, and the romantic Indo-Portuguese Mando music accompanied by the traditional earthen drum called Ghumot.
+""",
+        "metadata": {"source": "ai4bharat/MSMARCO-XI", "domain": "festivals_and_culture", "split": "train"}
+    },
+    {
+        "doc_id": "msmarco_xi_119",
+        "title": "Goa History, Portuguese Era, Operation Vijay, and 1961 Liberation",
+        "language": "en",
+        "content": """# TITLE: History of Goa: Dynasties, Portuguese Colonial Rule, and Liberation
+# SECTION: Ancient and Medieval Goa
+Ancient Goa was ruled by the Bhoja and Kadamba dynasties (10th to 14th century) who established their capitals at Chandor (Chandrapur) and Gopakapattana (Goa Velha).
+In 1510, the Portuguese led by Admiral Afonso de Albuquerque conquered Goa from the Sultan of Bijapur (Ismail Adil Shah), establishing Goa as the capital of the Portuguese Empire in Asia (Estado da Índia).
+
+# SECTION: Operation Vijay and Goa Liberation Day
+On December 19, 1961, the Indian Armed Forces launched 'Operation Vijay', successfully liberating Goa, Daman, and Diu from 451 years of Portuguese colonial rule.
+December 19 is celebrated annually as Goa Liberation Day. Goa achieved full statehood as the 25th state of the Indian Union on May 30, 1987.
+""",
+        "metadata": {"source": "ai4bharat/MSMARCO-XI", "domain": "history", "split": "train"}
+    },
+    {
+        "doc_id": "msmarco_xi_120",
+        "title": "Goan Markets, Latin Quarter Fontainhas, and Divar Island",
+        "language": "en",
+        "content": """# TITLE: Goan Flea Markets, Fontainhas Latin Quarter, and Island Heritage
+# SECTION: Famous Flea Markets and Shopping
+The Wednesday Flea Market at Anjuna Beach and the Saturday Night Market in Arpora are world-famous for bohemian fashion, crafts, and live music.
+The Mapusa Friday Market is Goa's largest traditional bazaar for dried spices, Goan sausages (Chouriço), cashew nuts, and fresh produce.
+
+# SECTION: Fontainhas Latin Quarter and Heritage Houses
+Fontainhas in Panaji is Asia's only preserved Latin Quarter, known for its vibrant Mediterranean-hued yellow, green, and blue Portuguese houses, red tiled roofs, and projecting wooden balcões (balconies).
+Historic Indo-Portuguese mansions include the Menezes Braganza House in Chandor and Palácio do Deão in Quepem.
+""",
+        "metadata": {"source": "ai4bharat/MSMARCO-XI", "domain": "heritage_and_lifestyle", "split": "train"}
     }
 ]
 
