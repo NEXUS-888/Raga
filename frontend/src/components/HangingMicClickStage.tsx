@@ -336,7 +336,7 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
   };
 
   // Base hanging cable length & Responsive physics
-  const baseCableHeight = isListening ? (isMobile ? 55 : 160) : (isMobile ? 25 : 75);
+  const baseCableHeight = isListening ? (isMobile ? 65 : 180) : (isMobile ? 35 : 125);
   const cableHeight = isDragging ? baseCableHeight + dragOffset.y * 0.4 : baseCableHeight;
   const pulseScale = isListening ? Math.min(1.12, 1 + volumeLevel * 0.25) : 1;
 
@@ -349,9 +349,9 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
         style={{
           left: '50%',
           transform: 'translateX(-50%)',
-          top: isMobile ? '52px' : 0,
-          width: isMobile ? '100px' : '140px',
-          height: isMobile ? '24px' : '36px',
+          top: 0,
+          width: isMobile ? '110px' : '140px',
+          height: isMobile ? '28px' : '36px',
         }}
         className="absolute z-20 pointer-events-auto flex items-center justify-center filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)]"
       >
@@ -370,7 +370,7 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
         style={{
           position: 'absolute',
           left: '50%',
-          top: isMobile ? '70px' : '30px', // Anchored right at ceiling dish collar
+          top: isMobile ? '24px' : '30px', // Anchored right at ceiling dish collar
           transformOrigin: '50% 0px', // PIVOTS CLEANLY FROM CEILING
           transform: `translateX(-50%) rotate(${swayAngle}deg)`,
           transition: isDragging ? 'none' : 'transform 700ms cubic-bezier(0.25, 1, 0.5, 1)',
@@ -383,7 +383,7 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
       >
         {/* Pulsing Helper Prompt */}
         {!isRevealed && !isListening && (
-          <div className="absolute top-[102%] sm:-top-3 px-3 sm:px-4 py-1 sm:py-1.5 bg-[#FFE500] text-black font-black text-[10px] sm:text-xs border-2 border-black rounded-full shadow-[3px_3px_0px_#000] sm:shadow-[4px_4px_0px_#000] whitespace-nowrap flex items-center space-x-1 sm:space-x-1.5 animate-bounce font-display z-30 pointer-events-none">
+          <div className="absolute top-[104%] sm:-top-3 px-3 sm:px-4 py-1 sm:py-1.5 bg-[#FFE500] text-black font-black text-[10px] sm:text-xs border-2 border-black rounded-full shadow-[3px_3px_0px_#000] sm:shadow-[4px_4px_0px_#000] whitespace-nowrap flex items-center space-x-1 sm:space-x-1.5 animate-bounce font-display z-30 pointer-events-none">
             <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current text-black" />
             <span>PULL OR CLICK MIC TO ENTER GOA</span>
             <MoveDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[3]" />
@@ -391,8 +391,8 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
         )}
 
         {isRevealed && !isListening && (
-          <div className="absolute top-[102%] sm:-top-2 px-2.5 sm:px-3.5 py-0.5 sm:py-1 bg-[#00F5D4] text-black font-black text-[9px] sm:text-[11px] border-2 border-black rounded-full shadow-[2px_2px_0px_#000] sm:shadow-[3px_3px_0px_#000] whitespace-nowrap flex items-center space-x-1 font-display z-30 pointer-events-none">
-            <span>TAP MIC TO SPEAK</span>
+          <div className="absolute top-[104%] sm:-top-2 px-2.5 sm:px-3.5 py-0.5 sm:py-1 bg-[#00F5D4] text-black font-black text-[9px] sm:text-[11px] border-2 border-black rounded-full shadow-[2px_2px_0px_#000] sm:shadow-[3px_3px_0px_#000] whitespace-nowrap flex items-center space-x-1 font-display z-30 pointer-events-none">
+            <span>PULL OR TAP MIC TO SPEAK</span>
             <MoveDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[2.5]" />
           </div>
         )}
@@ -413,7 +413,7 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
         {/* 2B. MICROPHONE CAPSULE (Seamlessly locked into the cable bottom) */}
         <div
           style={{
-            width: isMobile ? '90px' : '134px',
+            width: isMobile ? '96px' : '134px',
             marginTop: isMobile ? '-8px' : '-12px', // Deep physical overlap into the top purple connector collar
             transform: `scale(${pulseScale})`,
             transformOrigin: '49% 12px',
@@ -446,7 +446,7 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
       {isListening && (
         <div
           style={{
-            top: isMobile ? '60px' : `${baseCableHeight + 175}px`,
+            top: isMobile ? '70px' : `${baseCableHeight + 175}px`,
           }}
           className="fixed sm:absolute inset-x-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-40 sm:w-full sm:max-w-lg pointer-events-auto animate-slide-up"
         >
