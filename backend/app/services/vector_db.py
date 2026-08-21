@@ -136,18 +136,42 @@ class HybridVectorDB:
         if not self.chunks or self.chunk_embeddings is None:
             self.build_index(strategy=self.active_strategy)
 
+        # 1. Normalize Query Accents & Morphological Expansion
+        accent_map = {
+            'ó': 'o', 'ò': 'o', 'ô': 'o', 'õ': 'o', 'ö': 'o',
+            'á': 'a', 'à': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a',
+            'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
+            'í': 'i', 'ì': 'i', 'î': 'i', 'ï': 'i',
+            'ú': 'u', 'ù': 'u', 'û': 'u', 'ü': 'u',
+            'ç': 'c', 'ñ': 'n'
+        }
+        clean_q = query.lower()
+        for k, v in accent_map.items():
+            clean_q = clean_q.replace(k, v)
+
+        # Morphological synonyms for sparse recall
+        sparse_q = clean_q
+        if "foods" in sparse_q:
+            sparse_q = sparse_q.replace("foods", "food dishes cuisine")
+        if "dishes" in sparse_q:
+            sparse_q = sparse_q.replace("dishes", "dish food cuisine")
+        if "beaches" in sparse_q:
+            sparse_q = sparse_q.replace("beaches", "beach coast")
+        if "forts" in sparse_q:
+            sparse_q = sparse_q.replace("forts", "fort aguada chapora")
+
         # 1. Dense Embedding & Vector Search
         t_dense_0 = time.perf_counter()
-        query_vec = self.embedding_engine.embed(query)
+        query_vec = self.embedding_engine.embed(sparse_q)
         dense_scores = np.dot(self.chunk_embeddings, query_vec)
         dense_ranking = np.argsort(dense_scores)[::-1]
         dense_time_ms = (time.perf_counter() - t_dense_0) * 1000
 
         # 2. Sparse BM25 Search
         t_bm25_0 = time.perf_counter()
-        tokenized_query = [w.strip("?,!.") for w in query.lower().split() if w.strip("?,!.") not in STOP_WORDS and len(w) > 1]
+        tokenized_query = [w.strip("?,!.") for w in sparse_q.split() if w.strip("?,!.") not in STOP_WORDS and len(w) > 1]
         if not tokenized_query:
-            tokenized_query = query.lower().split()
+            tokenized_query = sparse_q.split()
             
         if self.bm25 and tokenized_query:
             bm25_scores = np.array(self.bm25.get_scores(tokenized_query))

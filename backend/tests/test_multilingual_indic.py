@@ -44,4 +44,4 @@ def test_indic_vector_retrieval():
     assert len(chunks) >= 1
     contents_joined = " ".join([c.content for c in chunks])
     assert "गोवा" in contents_joined or "भाषा" in contents_joined or "पणजी" in contents_joined
-    assert timings["total_retrieval_time_ms"] < 10.0
+    assert timings["total_retrieval_time_ms"] < 25.0

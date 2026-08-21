@@ -136,6 +136,15 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
         }
         recognizer.lang = targetLang;
 
+        const normalizeSpokenText = (raw: string) => {
+          return raw
+            .replace(/\bGóa\b/gi, 'Goa')
+            .replace(/\bgóà\b/gi, 'goa')
+            .replace(/\bgôa\b/gi, 'goa')
+            .replace(/\bgöa\b/gi, 'goa')
+            .replace(/\bpanajī\b/gi, 'Panaji');
+        };
+
         recognizer.onresult = (event: any) => {
           let interimText = '';
           let finalText = '';
@@ -146,7 +155,7 @@ export const HangingMicClickStage: React.FC<HangingMicClickStageProps> = ({
               interimText += event.results[i][0].transcript + ' ';
             }
           }
-          const currentText = (finalText + interimText).trim();
+          const currentText = normalizeSpokenText((finalText + interimText).trim());
           if (currentText) {
             transcriptRef.current = currentText;
             setLiveTranscript(currentText);

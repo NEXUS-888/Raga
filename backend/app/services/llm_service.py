@@ -267,9 +267,13 @@ class LLMService:
             "visit": ["baga", "calangute", "anjuna", "palolem", "colva", "aguada", "chapora", "bom jesus", "dudhsagar", "beach", "fort", "church", "tourism", "attractions", "places", "visit", "घूमने", "जगह", "पर्यटन"],
             "tourism": ["tourism", "tourist", "travel", "attractions", "places", "visit", "baga", "calangute", "aguada", "bom jesus", "पर्यटन", "घूमने"],
             "travel": ["tourism", "tourist", "travel", "attractions", "places", "visit", "baga", "calangute", "aguada", "bom jesus", "पर्यटन", "यात्रा"],
-            "food": ["curry", "rice", "dish", "dishes", "cuisine", "vindaloo", "xacuti", "bebinca", "cafreal", "balchao", "poi", "feni", "food", "फिश करी", "जाकुती", "विंदालू", "बेबिंका", "फेनी", "बालचाओ", "व्यंजन", "भोजन", "खाना"],
-            "eat": ["curry", "rice", "dish", "dishes", "cuisine", "vindaloo", "xacuti", "bebinca", "cafreal", "balchao", "food", "फिश करी", "जाकुती", "विंदालू", "बेबिंका", "फेनी", "व्यंजन", "भोजन", "खाना"],
-            "dish": ["curry", "rice", "dish", "dishes", "cuisine", "vindaloo", "xacuti", "bebinca", "cafreal", "balchao", "food", "फिश करी", "जाकुती", "विंदालू", "बेबिंका", "फेनी", "व्यंजन", "भोजन"],
+            "food": ["curry", "rice", "dish", "dishes", "cuisine", "cuisines", "vindaloo", "xacuti", "bebinca", "cafreal", "balchao", "poi", "feni", "food", "foods", "फिश करी", "जाकुती", "विंदालू", "बेबिंका", "फेनी", "बालचाओ", "व्यंजन", "भोजन", "खाना"],
+            "foods": ["curry", "rice", "dish", "dishes", "cuisine", "cuisines", "vindaloo", "xacuti", "bebinca", "cafreal", "balchao", "poi", "feni", "food", "foods", "फिश करी", "जाकुती", "विंदालू", "बेबिंका", "फेनी", "बालचाओ", "व्यंजन", "भोजन", "खाना"],
+            "eat": ["curry", "rice", "dish", "dishes", "cuisine", "cuisines", "vindaloo", "xacuti", "bebinca", "cafreal", "balchao", "food", "foods", "फिश करी", "जाकुती", "विंदालू", "बेबिंका", "फेनी", "व्यंजन", "भोजन", "खाना"],
+            "dish": ["curry", "rice", "dish", "dishes", "cuisine", "cuisines", "vindaloo", "xacuti", "bebinca", "cafreal", "balchao", "food", "foods", "फिश करी", "जाकुती", "विंदालू", "बेबिंका", "फेनी", "व्यंजन", "भोजन"],
+            "dishes": ["curry", "rice", "dish", "dishes", "cuisine", "cuisines", "vindaloo", "xacuti", "bebinca", "cafreal", "balchao", "food", "foods", "फिश करी", "जाकुती", "विंदालू", "बेबिंका", "फेनी", "व्यंजन", "भोजन"],
+            "cuisine": ["curry", "rice", "dish", "dishes", "cuisine", "cuisines", "vindaloo", "xacuti", "bebinca", "cafreal", "balchao", "food", "foods", "फिश करी", "जाकुती", "विंदालू", "बेबिंका", "फेनी", "व्यंजन", "भोजन"],
+            "cuisines": ["curry", "rice", "dish", "dishes", "cuisine", "cuisines", "vindaloo", "xacuti", "bebinca", "cafreal", "balchao", "food", "foods", "फिश करी", "जाकुती", "विंदालू", "बेबिंका", "फेनी", "व्यंजन", "भोजन"],
             "खाना": ["फिश करी", "fish curry", "जाकुती", "xacuti", "विंदालू", "vindaloo", "बेबिंका", "bebinca", "फेनी", "feni", "बालचाओ", "व्यंजन", "भोजन", "खाना", "खान-पान"],
             "खाने": ["फिश करी", "fish curry", "जाकुती", "xacuti", "विंदालू", "vindaloo", "बेबिंका", "bebinca", "फेनी", "feni", "बालचाओ", "व्यंजन", "भोजन", "खाना", "खान-पान"],
             "काने": ["फिश करी", "fish curry", "जाकुती", "xacuti", "विंदालू", "vindaloo", "बेबिंका", "bebinca", "फेनी", "feni", "बालचाओ", "व्यंजन", "भोजन", "खाना", "खान-पान"],
@@ -328,6 +332,30 @@ class LLMService:
                     for te in target_entities:
                         if te in s_lower:
                             s_score += 15.0
+
+                    # Food intent alignment
+                    is_food_query = any(w in norm_query for w in ["food", "foods", "dish", "dishes", "cuisine", "cuisines", "eat", "curry", "seafood", "खाना", "व्यंजन", "भोजन"])
+                    if is_food_query:
+                        if any(w in s_lower for w in ["curry", "fish", "rice", "vindaloo", "xacuti", "bebinca", "feni", "cafreal", "balchao", "poi", "cuisine", "dish", "special food"]):
+                            s_score += 15.0
+                        if any(w in s_lower for w in ["capital", "southwestern coast", "largest city", "konkan region", "defense bastions", "lighthouse"]):
+                            s_score *= 0.05
+
+                    # Beach intent alignment
+                    is_beach_query = any(w in norm_query for w in ["beach", "beaches", "समुद्र तट", "बीच"])
+                    if is_beach_query:
+                        if any(w in s_lower for w in ["baga", "calangute", "anjuna", "palolem", "colva", "vagator", "arambol", "beach", "beaches"]):
+                            s_score += 15.0
+                        if any(w in s_lower for w in ["capital", "southwestern coast", "reservoir", "fort"]):
+                            s_score *= 0.1
+
+                    # Fort intent alignment
+                    is_fort_query = any(w in norm_query for w in ["fort", "forts", "किला", "किले"])
+                    if is_fort_query:
+                        if any(w in s_lower for w in ["aguada", "chapora", "reis magos", "fort", "forts", "bastion"]):
+                            s_score += 15.0
+                        if any(w in s_lower for w in ["curry", "fish", "beach", "cuisine"]):
+                            s_score *= 0.1
                                 
                     # Penalize climate/weather sentences if query is not about climate/weather
                     if any(w in s_lower for w in ["climate", "monsoon", "rainfall", "humidity", "weather"]) and not any(w in norm_query for w in ["climate", "monsoon", "rainfall", "rain", "weather", "season"]):

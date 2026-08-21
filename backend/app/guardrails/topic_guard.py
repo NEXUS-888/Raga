@@ -18,9 +18,9 @@ class TopicGuard:
         }
 
         self.generic_goa_intents = {
-            'beach', 'beaches', 'fort', 'forts', 'church', 'churches', 'waterfall',
-            'seafood', 'fish curry', 'cuisine', 'dishes', 'traditional food',
-            'समुद्र तट', 'बीच', 'किला', 'किले', 'चर्च', 'झरना', 'व्यंजन', 'भोजन'
+            'beach', 'beaches', 'fort', 'forts', 'church', 'churches', 'waterfall', 'waterfalls',
+            'food', 'foods', 'seafood', 'fish curry', 'cuisine', 'cuisines', 'dish', 'dishes', 'traditional food',
+            'समुद्र तट', 'बीच', 'किला', 'किले', 'चर्च', 'झरना', 'व्यंजन', 'भोजन', 'खान-पान'
         }
 
         self.outside_entities = {
@@ -37,13 +37,30 @@ class TopicGuard:
             'thank you', 'thanks', 'bye', 'goodbye', 'नमस्ते', 'हेलो'
         ]
 
+        self.accent_map = {
+            'ó': 'o', 'ò': 'o', 'ô': 'o', 'õ': 'o', 'ö': 'o',
+            'á': 'a', 'à': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a',
+            'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
+            'í': 'i', 'ì': 'i', 'î': 'i', 'ï': 'i',
+            'ú': 'u', 'ù': 'u', 'û': 'u', 'ü': 'u',
+            'ç': 'c', 'ñ': 'n'
+        }
+
+    def _normalize_text(self, text: str) -> str:
+        t = text.lower().strip()
+        for k, v in self.accent_map.items():
+            t = t.replace(k, v)
+        return t
+
     def _match_token(self, token: str, text: str) -> bool:
-        if any(ord(c) > 127 for c in token):
-            return token in text
-        return bool(re.search(r'\b' + re.escape(token) + r'\b', text))
+        norm_t = self._normalize_text(text)
+        norm_tok = self._normalize_text(token)
+        if any(ord(c) > 127 for c in norm_tok):
+            return norm_tok in norm_t
+        return bool(re.search(r'\b' + re.escape(norm_tok) + r'\b', norm_t))
 
     def evaluate_topic(self, query: str, domain_keywords: Optional[List[str]] = None) -> GuardrailVerdict:
-        q_lower = query.lower().strip()
+        q_lower = self._normalize_text(query)
         words = set(re.findall(r'\w+', q_lower))
 
         if not words and not q_lower:
