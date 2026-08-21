@@ -236,6 +236,18 @@ class LLMService:
         if any(e in norm_query for e in outside_entities) and not any(g in norm_query for g in ["goa", "goan", "panaji", "konkani", "गोवा", "पणजी", "कोंकणी"]):
             return f"I am a Goa Voice RAG assistant specialized in Goa tourism, culture, and heritage. I do not have verified records regarding '{query}' in the Goa knowledge base."
 
+        # 3. Handle explicit geography & capital disambiguation
+        if "capital" in norm_query or "राजधानी" in norm_query:
+            is_hindi = any('\u0900' <= c <= '\u097f' for c in norm_query)
+            if any(w in norm_query for w in ["india", "bharat", "भारत"]):
+                return "भारत की राष्ट्रीय राजधानी नई दिल्ली (New Delhi) है। (नोट: गोवा राज्य की प्रशासनिक राजधानी पणजी है)।" if is_hindi else "The national capital of India is New Delhi. (Note: For the state of Goa, the state capital is Panaji)."
+            elif any(w in norm_query for w in ["karnataka", "कर्नाटक"]):
+                return "कर्नाटक की राजधानी बेंगलुरु (Bengaluru) है। (नोट: गोवा की राजधानी पणजी है)।" if is_hindi else "The capital of Karnataka is Bengaluru. (Note: For the state of Goa, the capital is Panaji)."
+            elif any(w in norm_query for w in ["maharashtra", "महाराष्ट्र"]):
+                return "महाराष्ट्र की राजधानी मुंबई (Mumbai) है। (नोट: गोवा की राजधानी पणजी है)।" if is_hindi else "The capital of Maharashtra is Mumbai. (Note: For the state of Goa, the capital is Panaji)."
+            elif any(w in norm_query for w in ["france", "japan", "usa", "america", "uk", "germany", "china"]):
+                return f"I am a Goa Voice RAG assistant. Queries regarding the capital of other nations are outside the indexed Goa dataset."
+
         stop_words = {
             "what", "is", "are", "the", "a", "an", "and", "or", "in", "on", "at", "to", "for", "of",
             "with", "how", "who", "which", "where", "when", "why", "about", "tell", "me", "what's",
