@@ -162,33 +162,34 @@ export const App: React.FC = () => {
             </select>
           </div>
 
-          {/* Center: Dual Workspace Switcher (Voice Workspace vs System Evidence) */}
-          <div className="flex items-center p-1 bg-[#0F172A]/90 border border-slate-700/80 rounded-full shadow-2xl backdrop-blur-xl pointer-events-auto">
-            <button
-              onClick={() => setWorkspaceMode('voice')}
-              className={`px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
-                workspaceMode === 'voice'
-                  ? 'bg-[#FF2A55] text-white shadow-[2px_2px_0px_#000]'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <span>🎙️ Voice Workspace</span>
-            </button>
+          {/* Right Controls: Workspace Switcher + Specs Trigger */}
+          <div className="flex items-center space-x-2.5 pointer-events-auto">
+            {/* Dual Workspace Switcher */}
+            <div className="flex items-center p-1 bg-[#0F172A]/90 border border-slate-700/80 rounded-full shadow-2xl backdrop-blur-xl">
+              <button
+                onClick={() => setWorkspaceMode('voice')}
+                className={`px-3 sm:px-3.5 py-1 rounded-full text-xs font-bold transition-all flex items-center space-x-1 cursor-pointer ${
+                  workspaceMode === 'voice'
+                    ? 'bg-[#FF2A55] text-white shadow-[2px_2px_0px_#000]'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <span>🎙️ Voice</span>
+              </button>
 
-            <button
-              onClick={() => setWorkspaceMode('evidence')}
-              className={`px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
-                workspaceMode === 'evidence'
-                  ? 'bg-[#00F5D4] text-black shadow-[2px_2px_0px_#000]'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <span>⚡ System Evidence</span>
-            </button>
-          </div>
+              <button
+                onClick={() => setWorkspaceMode('evidence')}
+                className={`px-3 sm:px-3.5 py-1 rounded-full text-xs font-bold transition-all flex items-center space-x-1 cursor-pointer ${
+                  workspaceMode === 'evidence'
+                    ? 'bg-[#00F5D4] text-black shadow-[2px_2px_0px_#000]'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <span>⚡ Evidence</span>
+              </button>
+            </div>
 
-          {/* Right Specs Trigger */}
-          <div className="flex items-center space-x-2 pointer-events-auto">
+            {/* Technical Specs Trigger */}
             <button
               onClick={() => setIsSpecsOpen(true)}
               className="btn-memphis px-3 py-1.5 rounded-xl text-xs font-black uppercase flex items-center space-x-1"
