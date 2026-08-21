@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   Zap,
-  Palmtree,
   Send,
   Loader2,
   Globe
@@ -12,11 +11,14 @@ import { FloatingOrganicAnswer } from './components/FloatingOrganicAnswer';
 import { SpecsDrawer } from './components/SpecsDrawer';
 import { SystemEvidenceView } from './components/SystemEvidenceView';
 import { LanguagePickerModal, SUPPORTED_LANGUAGES } from './components/LanguagePickerModal';
+import { RagaSplashReveal } from './components/RagaSplashReveal';
+import { RagaLogoPill } from './components/RagaLogoPill';
 import type { VoiceRAGResponse } from './types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
 export const App: React.FC = () => {
+  const [showSplash, setShowSplash] = useState<boolean>(true);
   const [workspaceMode, setWorkspaceMode] = useState<'voice' | 'evidence'>('voice');
   const [isRevealed, setIsRevealed] = useState<boolean>(true);
   const [isListening, setIsListening] = useState<boolean>(false);
@@ -183,17 +185,20 @@ export const App: React.FC = () => {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-[#05070D] font-sans select-none">
+      {/* 🎬 Dynamic RAGA Splash Reveal Loading Animation */}
+      {showSplash && (
+        <RagaSplashReveal onComplete={() => setShowSplash(false)} />
+      )}
+
       {/* 🧭 Top Minimalist Header with Dual Workspace Switcher & Dataset Badge */}
       {isRevealed && (
         <header className="fixed top-0 left-0 right-0 z-40 p-4 sm:px-8 flex items-center justify-between pointer-events-none animate-slide-up">
           {/* Left Brand, Dataset Badge & Lang */}
-          <div className="flex items-center space-x-2 pointer-events-auto">
-            <div className="px-3 py-1.5 bg-[#FF2A55] text-white border-2 border-black rounded-xl shadow-[3px_3px_0px_#000] flex items-center space-x-1.5 text-xs font-black font-display uppercase tracking-wider">
-              <Palmtree className="w-4 h-4 fill-current" />
-              <span className="hidden sm:inline">Goa Voice RAG</span>
-            </div>
+          <div className="flex items-center space-x-3 pointer-events-auto">
+            {/* Interactive RAGA Brand Logo (Click to Replay Reveal) */}
+            <RagaLogoPill onClick={() => setShowSplash(true)} />
 
-            <div className="hidden md:flex items-center space-x-1 px-2.5 py-1 bg-[#1E293B] border border-slate-700 text-[10px] font-mono text-cyan-300 rounded-lg shadow-sm">
+            <div className="hidden md:flex items-center space-x-1 px-2.5 py-1 bg-[#1E293B]/90 border border-slate-700 text-[10px] font-mono text-cyan-300 rounded-lg shadow-sm">
               <span>Dataset:</span>
               <span className="font-bold text-white">MSMARCO-XI</span>
             </div>
@@ -201,7 +206,7 @@ export const App: React.FC = () => {
             {/* Language Selector Trigger */}
             <button
               onClick={() => setIsLangPickerOpen(true)}
-              className="bg-black hover:bg-slate-900 text-white border-2 border-black rounded-xl px-2.5 py-1.5 text-xs font-bold shadow-[2px_2px_0px_#000] flex items-center space-x-1.5 cursor-pointer active:translate-x-0.5 active:translate-y-0.5 transition-all"
+              className="bg-black/90 hover:bg-slate-900 text-white border-2 border-black rounded-xl px-2.5 py-1.5 text-xs font-bold shadow-[2px_2px_0px_#000] flex items-center space-x-1.5 cursor-pointer active:translate-x-0.5 active:translate-y-0.5 transition-all"
               title="Change Spoken Language Hint / Auto Detect"
             >
               <Globe className="w-3.5 h-3.5 text-[#00F5D4]" />
