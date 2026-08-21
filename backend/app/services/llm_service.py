@@ -276,6 +276,14 @@ class LLMService:
             "drink": ["feni", "sol kadi", "cashew", "beverage", "drink", "फेनी", "सोल कढ़ी"]
         }
 
+        # Specific entity extractors for ultra-precise grounding
+        specific_entities = [
+            "aguada", "chapora", "reis magos", "bebinca", "feni", "dudhsagar",
+            "baga", "calangute", "anjuna", "palolem", "colva", "xacuti", "vindaloo", "cafreal", "balchao",
+            "अगुआड़ा", "चापोरा", "रेइस मागस", "बेबिंका", "फेनी", "दूधसागर", "बागा", "कलंगूट", "अंजुना", "पालोलेम"
+        ]
+        target_entities = [e for e in specific_entities if e in norm_query]
+
         chunk_evals = []
         for chunk in chunks:
             c_norm = unicodedata.normalize('NFC', chunk.content)
@@ -303,10 +311,20 @@ class LLMService:
                                 matched_syns = sum(1 for sv in syn_vals if re.search(r'\b' + re.escape(sv) + r'\b', s_lower))
                                 if matched_syns > 0:
                                     s_score += 3.5 * min(3, matched_syns)
+
+                    # Major boost for specific target entity mentions
+                    for te in target_entities:
+                        if te in s_lower:
+                            s_score += 15.0
                                 
                     # Penalize climate/weather sentences if query is not about climate/weather
                     if any(w in s_lower for w in ["climate", "monsoon", "rainfall", "humidity", "weather"]) and not any(w in norm_query for w in ["climate", "monsoon", "rainfall", "rain", "weather", "season"]):
                         s_score *= 0.2
+
+                    # De-prioritize generic meta-summary sentences when specific topics are queried
+                    if "this interactive voice assistant can instantly answer" in s_lower or "voice-enabled rag" in s_lower:
+                        if any(w in norm_query for w in ["fort", "beach", "food", "dish", "curry", "waterfall", "church", "feni", "bebinca", "aguada", "chapora"]):
+                            s_score *= 0.05
 
                     if s_score > 0:
                         c_score += s_score
