@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 
 interface RagaSplashRevealProps {
@@ -19,27 +19,23 @@ export const RagaSplashReveal: React.FC<RagaSplashRevealProps> = ({
   const soundWavesRightRef = useRef<SVGGElement>(null);
   const [isDismissed, setIsDismissed] = useState(false);
 
+  const handleDismiss = () => {
+    if (isDismissed) return;
+    gsap.to(containerRef.current, {
+      opacity: 0,
+      scale: 1.06,
+      duration: 0.4,
+      ease: 'power2.inOut',
+      onComplete: () => {
+        setIsDismissed(true);
+        if (onComplete) onComplete();
+      }
+    });
+  };
+
   useEffect(() => {
     const ctx = gsap.context(() => {
-      const tl = gsap.timeline({
-        onComplete: () => {
-          // Trigger optional dismissal
-          const dismissTimer = setTimeout(() => {
-            gsap.to(containerRef.current, {
-              opacity: 0,
-              scale: 1.08,
-              duration: 0.55,
-              ease: 'power3.inOut',
-              onComplete: () => {
-                setIsDismissed(true);
-                if (onComplete) onComplete();
-              }
-            });
-          }, autoDismissTimeout - 1400);
-
-          return () => clearTimeout(dismissTimer);
-        }
-      });
+      const tl = gsap.timeline();
 
       // Initial state
       gsap.set(pillRef.current, {
@@ -67,18 +63,18 @@ export const RagaSplashReveal: React.FC<RagaSplashRevealProps> = ({
         transformOrigin: 'center center'
       });
 
-      // Step 1: Subtle initial pop & wave pulse (0.0s - 0.25s)
+      // Step 1: Subtle opening wave pop (0.0s - 0.25s)
       tl.to([soundWavesLeftRef.current, soundWavesRightRef.current], {
         opacity: 1,
         scale: 1.15,
-        duration: 0.35,
+        duration: 0.3,
         repeat: 1,
         yoyo: true,
         ease: 'power2.out'
       }, 0);
 
-      // Step 2: The Slide & Unfurl (0.25s - 0.85s)
-      // Pill expands horizontally from 140px to 480px
+      // Step 2: The Slide & Unfurl (0.2s - 0.8s)
+      // Pill expands horizontally from 140px to 490px
       tl.to(pillRef.current, {
         width: 490,
         duration: 0.65,
@@ -100,25 +96,27 @@ export const RagaSplashReveal: React.FC<RagaSplashRevealProps> = ({
         ease: 'back.out(2)'
       }, 0.45);
 
-      // Step 4: Staggered Letters Reveal: R -> A -> G -> A (0.5s - 1.1s)
+      // Step 4: Staggered Letters Reveal: R -> A -> G -> A (0.5s - 1.0s)
       tl.to('.raga-letter', {
         opacity: 1,
         x: 0,
         scale: 1,
-        duration: 0.45,
-        stagger: 0.09,
+        duration: 0.4,
+        stagger: 0.08,
         ease: 'back.out(2.2)'
-      }, 0.52);
+      }, 0.5);
 
-      // Step 5: Soundwaves continuous ambient pulse
-      tl.to([soundWavesLeftRef.current, soundWavesRightRef.current], {
-        opacity: 1,
-        scale: 1.1,
-        duration: 0.6,
-        repeat: -1,
-        yoyo: true,
-        ease: 'sine.inOut'
-      }, 1.0);
+      // Step 5: Smooth Transition into App (Hold for 0.7s, then fade/zoom into main app UI)
+      tl.to(containerRef.current, {
+        opacity: 0,
+        scale: 1.06,
+        duration: 0.55,
+        ease: 'power2.inOut',
+        onComplete: () => {
+          setIsDismissed(true);
+          if (onComplete) onComplete();
+        }
+      }, "+=0.7");
 
     }, containerRef);
 
@@ -130,8 +128,10 @@ export const RagaSplashReveal: React.FC<RagaSplashRevealProps> = ({
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#130324]/95 backdrop-blur-xl select-none"
+      onClick={handleDismiss}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#130324]/95 backdrop-blur-xl select-none cursor-pointer transition-all"
       style={{ perspective: '1000px' }}
+      title="Click to enter immediately"
     >
       {/* Ambient background glow */}
       <div className="absolute w-[600px] h-[300px] bg-gradient-to-r from-amber-500/20 via-pink-500/20 to-purple-500/20 blur-3xl rounded-full pointer-events-none animate-pulse" />
