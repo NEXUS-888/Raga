@@ -115,14 +115,14 @@ class LLMService:
                 for c in retrieved_chunks[:2]
             ])[:700]
             system_prompt = system_instruction or (
-                "You are an ultra-fast Voice AI assistant specializing in Goa tourism, cuisine, culture, and history. "
+                "You are an ultra-fast Voice AI assistant grounded on the indexed MSMARCO-XI knowledge corpus. "
                 "Answer the user strictly in the EXACT SAME LANGUAGE and SCRIPT as their question (e.g. Kannada, Telugu, Tamil, Marathi, Bengali, Hindi, English). "
-                "Give a direct, concise 1-sentence factual answer based on the context."
+                "Give a direct, concise 1-2 sentence factual answer based strictly on the context."
             )
             user_prompt = f"Context:\n{context_block}\n\nQuestion: {query}\n\nAnswer:"
         else:
             system_prompt = system_instruction or (
-                "You are an ultra-fast Voice AI assistant for Goa. Answer accurately in 1 concise sentence in the user's language."
+                "You are an ultra-fast Voice AI assistant. Answer accurately in 1-2 concise sentences in the user's language."
             )
             user_prompt = f"Question: {query}\n\nAnswer:"
 
@@ -529,7 +529,7 @@ class LLMService:
                         return parts[0].rstrip(".") + "."
 
         # If query has low or no grounding match, provide a clean polite refusal rather than a random chunk
-        return f"I am your specialized Goa Voice AI Assistant. I don't have verified records matching '{query}' in the indexed Goa dataset. You can ask me about Goa's capital (Panaji), famous beaches (Baga, Anjuna), historic forts (Aguada, Chapora), or traditional cuisine (Fish Curry Rice, Bebinca)!"
+        return f"I am your specialized Voice AI Assistant. I don't have verified records matching '{query}' in the indexed MSMARCO-XI dataset. Please ask a question related to the indexed knowledge base."
 
 llm_service = LLMService()
 
