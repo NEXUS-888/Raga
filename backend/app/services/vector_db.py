@@ -193,11 +193,31 @@ class HybridVectorDB:
         if "தலைநகரம்" in sparse_q: sparse_q += " capital panaji"
 
         # Bengali (বাংলা)
-        if "গোয়া" in sparse_q: sparse_q += " goa"
+        if "গোয়া" in sparse_q or "গোয়ার" in sparse_q: sparse_q += " goa"
         if "খাবার" in sparse_q: sparse_q += " food dishes fish curry"
         if "সৈকত" in sparse_q: sparse_q += " beach beaches"
         if "মন্দির" in sparse_q: sparse_q += " temple temples"
         if "রাজধানী" in sparse_q: sparse_q += " capital panaji"
+        if "ভিটামিন" in sparse_q: sparse_q += " vitamin d deficiency symptoms"
+
+        # Marathi (मराठी)
+        if any(c in sparse_q for c in ["गोवा", "गोव्या", "गोव्याची", "गोव्यातील"]): sparse_q += " goa"
+        if any(c in sparse_q for c in ["किल्ले", "किल्ला"]): sparse_q += " fort aguada chapora"
+        if any(c in sparse_q for c in ["खाद्यपदार्थ", "जेवण"]): sparse_q += " food dishes fish curry"
+        if "राजधानी" in sparse_q: sparse_q += " capital panaji"
+
+        # Gujarati (ગુજરાતી)
+        if any(c in sparse_q for c in ["ગોવા", "ગોવાની"]): sparse_q += " goa"
+        if "ખોરાક" in sparse_q: sparse_q += " food dishes fish curry"
+        if "રાજધાની" in sparse_q: sparse_q += " capital panaji"
+        if "કિલ્લો" in sparse_q: sparse_q += " fort aguada chapora"
+
+        # Malayalam (മലയാളം)
+        if any(c in sparse_q for c in ["ഗോവ", "ഗോവയുടെ"]): sparse_q += " goa"
+        if any(c in sparse_q for c in ["ഭക്ഷണം", "ഭക്ഷണങ്ങൾ"]): sparse_q += " food dishes fish curry"
+        if "തലസ്ഥാനം" in sparse_q: sparse_q += " capital panaji"
+        if any(c in sparse_q for c in ["ബീച്ച്", "കടൽത്തീരം"]): sparse_q += " beach beaches baga"
+        if "കോട്ട" in sparse_q: sparse_q += " fort aguada chapora"
 
         # 1. Dense Embedding & Vector Search
         t_dense_0 = time.perf_counter()

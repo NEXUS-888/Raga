@@ -30,9 +30,10 @@ class LLMService:
         q_lower = query.lower().strip()
         words = q_lower.split()
         
-        # 0. Check for Regional Indic Scripts (Kannada, Telugu, Tamil, Bengali, Malayalam, Gujarati, Punjabi, Odia)
+        # 0. Check for Regional Indic Scripts (Devanagari, Kannada, Telugu, Tamil, Bengali, Malayalam, Gujarati, Punjabi, Odia)
         # These require cross-lingual synthesis into the user's native script
         indic_scripts = (
+            '\u0900', '\u097F',  # Devanagari (Hindi, Marathi, Sanskrit, Konkani)
             '\u0C80', '\u0CFF',  # Kannada
             '\u0C00', '\u0C7F',  # Telugu
             '\u0B80', '\u0BFF',  # Tamil
@@ -178,32 +179,33 @@ class LLMService:
             "Content-Type": "application/json"
         }
         
-        # Try primary model first, fallback to fast 20b model on Groq
+        # Try primary model first, fallback to fast models on Groq
         models_to_try = [settings.llm_model or "groq/compound-mini", "openai/gpt-oss-20b"]
-        for model_name in models_to_try:
-            payload = {
-                "model": model_name,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                "temperature": 0.0,
-                "max_tokens": 300
-            }
-            try:
-                resp = await self.client.post(self.groq_url, headers=headers, json=payload)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    raw_answer = data["choices"][0]["message"]["content"].strip()
-                    # Clean thinking tokens if present
-                    if "</think>" in raw_answer:
-                        raw_answer = raw_answer.split("</think>")[-1].strip()
-                    elif "<think>" in raw_answer:
-                        raw_answer = raw_answer.replace("<think>", "").strip()
-                    if raw_answer and len(raw_answer) > 5:
-                        return raw_answer, {"model_used": model_name, "usage": data.get("usage", {})}
-            except Exception:
-                continue
+        async with httpx.AsyncClient(timeout=6.0) as client:
+            for model_name in models_to_try:
+                payload = {
+                    "model": model_name,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    "temperature": 0.0,
+                    "max_tokens": 300
+                }
+                try:
+                    resp = await client.post(self.groq_url, headers=headers, json=payload)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        raw_answer = data["choices"][0]["message"]["content"].strip()
+                        # Clean thinking tokens if present
+                        if "</think>" in raw_answer:
+                            raw_answer = raw_answer.split("</think>")[-1].strip()
+                        elif "<think>" in raw_answer:
+                            raw_answer = raw_answer.replace("<think>", "").strip()
+                        if raw_answer and len(raw_answer) > 5:
+                            return raw_answer, {"model_used": model_name, "usage": data.get("usage", {})}
+                except Exception:
+                    continue
 
         raise RuntimeError(f"Groq API calls failed for models: {models_to_try}")
 
