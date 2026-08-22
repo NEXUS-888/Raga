@@ -160,27 +160,9 @@ class LLMService:
                         **meta
                     }
             except Exception as e:
-                print(f"[LLM Fallback] Gemini call failed: {e}. Cascading to OpenAI...")
+                print(f"[LLM Fallback] Gemini call failed: {e}. Cascading to Turbo Synthesizer...")
 
-        # 3. Tertiary Cloud Fallback: OpenAI GPT-4o-mini
-        if settings.openai_api_key:
-            try:
-                answer, meta = await asyncio.wait_for(
-                    self._call_openai(system_prompt, user_prompt),
-                    timeout=4.0
-                )
-                if answer and len(answer.strip()) > 5:
-                    elapsed_ms = (time.perf_counter() - t0) * 1000
-                    return answer, elapsed_ms, {
-                        "provider": "openai_llm",
-                        "route_decision": route,
-                        "route_reason": "Failover to OpenAI GPT-4o-mini",
-                        **meta
-                    }
-            except Exception as e:
-                print(f"[LLM Fallback] OpenAI call failed: {e}. Cascading to Turbo Synthesizer...")
-
-        # 4. Ultimate Safety Net: Local In-Memory Turbo Synthesizer (0 credits, 100% offline, <5ms)
+        # 3. Ultimate Safety Net: Local In-Memory Turbo Synthesizer (0 credits, 100% offline, <5ms)
         answer = self._synthesize_local_grounded_answer(query, retrieved_chunks)
         elapsed_ms = (time.perf_counter() - t0) * 1000
         return answer, elapsed_ms, {
@@ -250,27 +232,6 @@ class LLMService:
                         answer = parts[0]["text"].strip()
                         return answer, {"model_used": "gemini-1.5-flash"}
             raise RuntimeError(f"Gemini API returned status {resp.status_code}: {resp.text}")
-
-    async def _call_openai(self, system_prompt: str, user_prompt: str) -> Tuple[str, Dict[str, Any]]:
-        headers = {
-            "Authorization": f"Bearer {settings.openai_api_key}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "model": "gpt-4o-mini",
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            "temperature": 0.0,
-            "max_tokens": 100
-        }
-        async with httpx.AsyncClient(timeout=4.0) as client:
-            resp = await client.post(self.openai_url, headers=headers, json=payload)
-            resp.raise_for_status()
-            data = resp.json()
-            answer = data["choices"][0]["message"]["content"].strip()
-            return answer, {"model_used": "gpt-4o-mini", "usage": data.get("usage", {})}
 
     def _synthesize_local_grounded_answer(self, query: str, chunks: List[Chunk]) -> str:
         """

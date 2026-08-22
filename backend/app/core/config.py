@@ -21,10 +21,9 @@ class Settings(BaseSettings):
     elevenlabs_api_key: str = os.getenv("ELEVENLABS_API_KEY", "")
 
     # LLM Settings (for sub-200ms generation)
-    llm_provider: str = os.getenv("LLM_PROVIDER", "groq")  # "groq", "gemini", "openai", or "mock"
+    llm_provider: str = os.getenv("LLM_PROVIDER", "groq")  # "groq", "gemini", or "mock"
     groq_api_key: str = os.getenv("GROQ_API_KEY", "")
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
-    openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
     llm_model: str = os.getenv("LLM_MODEL", "groq/compound-mini")
 
     # Latency Constraints (ms)
