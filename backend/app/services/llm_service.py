@@ -126,7 +126,7 @@ class LLMService:
             )
             user_prompt = f"Question: {query}\n\nAnswer:"
 
-        # Try Groq API
+        # 1. Primary Cloud Provider: Groq API
         if settings.groq_api_key:
             try:
                 answer, meta = await asyncio.wait_for(
@@ -141,18 +141,52 @@ class LLMService:
                         "route_reason": reason,
                         **meta
                     }
-            except asyncio.TimeoutError:
-                print(f"[LLM Latency Guard] Groq cloud exceeded timeout. Cascading to Turbo Synthesizer.")
             except Exception as e:
-                print(f"[LLM Warning] Groq API call failed: {e}. Cascading to Turbo Synthesizer.")
+                print(f"[LLM Fallback] Groq unavailable/depleted: {e}. Cascading to Gemini...")
 
-        # Fallback to Turbo Synthesizer
+        # 2. Secondary Cloud Fallback: Google Gemini (Gemini 1.5 / 2.0 Flash)
+        if settings.gemini_api_key:
+            try:
+                answer, meta = await asyncio.wait_for(
+                    self._call_gemini(system_prompt, user_prompt),
+                    timeout=4.0
+                )
+                if answer and len(answer.strip()) > 5:
+                    elapsed_ms = (time.perf_counter() - t0) * 1000
+                    return answer, elapsed_ms, {
+                        "provider": "gemini_llm",
+                        "route_decision": route,
+                        "route_reason": "Groq failover to Google Gemini Flash",
+                        **meta
+                    }
+            except Exception as e:
+                print(f"[LLM Fallback] Gemini call failed: {e}. Cascading to OpenAI...")
+
+        # 3. Tertiary Cloud Fallback: OpenAI GPT-4o-mini
+        if settings.openai_api_key:
+            try:
+                answer, meta = await asyncio.wait_for(
+                    self._call_openai(system_prompt, user_prompt),
+                    timeout=4.0
+                )
+                if answer and len(answer.strip()) > 5:
+                    elapsed_ms = (time.perf_counter() - t0) * 1000
+                    return answer, elapsed_ms, {
+                        "provider": "openai_llm",
+                        "route_decision": route,
+                        "route_reason": "Failover to OpenAI GPT-4o-mini",
+                        **meta
+                    }
+            except Exception as e:
+                print(f"[LLM Fallback] OpenAI call failed: {e}. Cascading to Turbo Synthesizer...")
+
+        # 4. Ultimate Safety Net: Local In-Memory Turbo Synthesizer (0 credits, 100% offline, <5ms)
         answer = self._synthesize_local_grounded_answer(query, retrieved_chunks)
         elapsed_ms = (time.perf_counter() - t0) * 1000
         return answer, elapsed_ms, {
             "provider": "turbo_fast_synthesizer",
             "route_decision": "fallback_turbo",
-            "route_reason": "Local grounded synthesizer execution",
+            "route_reason": "Offline local grounded synthesizer (zero credits required)",
             "chunks_used": len(retrieved_chunks)
         }
 
@@ -185,7 +219,37 @@ class LLMService:
             if raw_answer and len(raw_answer) > 5:
                 return raw_answer, {"model_used": model_name, "usage": data.get("usage", {})}
 
-        raise RuntimeError(f"Groq returned status {resp.status_code}")
+        raise RuntimeError(f"Groq returned status {resp.status_code}: {resp.text}")
+
+    async def _call_gemini(self, system_prompt: str, user_prompt: str) -> Tuple[str, Dict[str, Any]]:
+        gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={settings.gemini_api_key}"
+        headers = {"Content-Type": "application/json"}
+        payload = {
+            "system_instruction": {
+                "parts": [{"text": system_prompt}]
+            },
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [{"text": user_prompt}]
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.0,
+                "maxOutputTokens": 100
+            }
+        }
+        async with httpx.AsyncClient(timeout=4.0) as client:
+            resp = await client.post(gemini_url, headers=headers, json=payload)
+            if resp.status_code == 200:
+                data = resp.json()
+                candidates = data.get("candidates", [])
+                if candidates:
+                    parts = candidates[0].get("content", {}).get("parts", [])
+                    if parts and "text" in parts[0]:
+                        answer = parts[0]["text"].strip()
+                        return answer, {"model_used": "gemini-1.5-flash"}
+            raise RuntimeError(f"Gemini API returned status {resp.status_code}: {resp.text}")
 
     async def _call_openai(self, system_prompt: str, user_prompt: str) -> Tuple[str, Dict[str, Any]]:
         headers = {
@@ -198,15 +262,15 @@ class LLMService:
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            "temperature": 0.1,
-            "max_tokens": 200
+            "temperature": 0.0,
+            "max_tokens": 100
         }
-        async with httpx.AsyncClient(timeout=5.0) as client:
+        async with httpx.AsyncClient(timeout=4.0) as client:
             resp = await client.post(self.openai_url, headers=headers, json=payload)
             resp.raise_for_status()
             data = resp.json()
             answer = data["choices"][0]["message"]["content"].strip()
-            return answer, {"usage": data.get("usage", {})}
+            return answer, {"model_used": "gpt-4o-mini", "usage": data.get("usage", {})}
 
     def _synthesize_local_grounded_answer(self, query: str, chunks: List[Chunk]) -> str:
         """
