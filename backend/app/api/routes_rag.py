@@ -31,7 +31,8 @@ async def query_rag_voice(
     chunking_strategy: str = Form("recursive_hierarchical"),
     stt_provider: str = Form("groq"),
     language: str = Form("en"),
-    top_k: int = Form(3)
+    top_k: int = Form(3),
+    llm_provider: Optional[str] = Form(None)
 ) -> VoiceRAGResponse:
     """
     End-to-end Voice RAG query taking raw audio file upload (WAV/WebM/MP3/M4A).
@@ -44,6 +45,7 @@ async def query_rag_voice(
     req = VoiceRAGRequest(
         chunking_strategy=chunking_strategy,
         stt_provider=stt_provider,
+        llm_provider=llm_provider,
         language=language,
         top_k=top_k,
         audio_filename=file.filename or "audio.wav"

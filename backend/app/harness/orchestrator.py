@@ -41,7 +41,7 @@ class PipelineOrchestrator:
             transcript, stt_ms, stt_meta = await stt_service.transcribe(
                 audio_bytes=audio_bytes,
                 provider=req.stt_provider,
-                language_code="hi-IN" if "hi" in req.language else "en-IN",
+                language_code=req.language or "auto",
                 filename=req.audio_filename
             )
             stt_elapsed = (time.perf_counter() - stt_t0) * 1000

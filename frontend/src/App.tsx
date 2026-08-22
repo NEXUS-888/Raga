@@ -50,13 +50,7 @@ export const App: React.FC = () => {
 
     const isIndicOrAuto = ['kn', 'te', 'ta', 'mr', 'bn', 'gu', 'ml', 'pa', 'or', 'as', 'kok', 'hi', 'auto', 'hinglish'].includes(language);
 
-    // If English or browser captured valid non-romanized characters and no audio, use direct text
-    if (!isIndicOrAuto && transcript && transcript.trim().length > 1 && (!audioBlob || audioBlob.size <= 500)) {
-      await handleTextSubmit(transcript.trim());
-      return;
-    }
-
-    // Priority for Indian languages & recorded audio: Send audio to backend (Sarvam AI Saaras for Indic languages & Auto-detect!)
+    // If microphone audio was recorded, ALWAYS send audio to backend Voice API (Sarvam AI / Groq Whisper)
     if (audioBlob && audioBlob.size > 500) {
       if (!isRevealed) {
         setIsRevealed(true);
