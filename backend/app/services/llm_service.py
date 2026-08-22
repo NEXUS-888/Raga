@@ -131,7 +131,7 @@ class LLMService:
             try:
                 answer, meta = await asyncio.wait_for(
                     self._call_groq(system_prompt, user_prompt),
-                    timeout=3.5
+                    timeout=5.0
                 )
                 if answer and len(answer.strip()) > 5:
                     elapsed_ms = (time.perf_counter() - t0) * 1000
@@ -144,12 +144,12 @@ class LLMService:
             except Exception as e:
                 print(f"[LLM Fallback] Groq unavailable/depleted: {e}. Cascading to Gemini...")
 
-        # 2. Secondary Cloud Fallback: Google Gemini (Gemini 1.5 / 2.0 Flash)
+        # 2. Secondary Cloud Fallback: Google Gemini (Gemini Flash)
         if settings.gemini_api_key:
             try:
                 answer, meta = await asyncio.wait_for(
                     self._call_gemini(system_prompt, user_prompt),
-                    timeout=4.0
+                    timeout=5.0
                 )
                 if answer and len(answer.strip()) > 5:
                     elapsed_ms = (time.perf_counter() - t0) * 1000
@@ -178,30 +178,34 @@ class LLMService:
             "Content-Type": "application/json"
         }
         
-        # Target Groq's high-speed model
-        model_name = settings.llm_model or "groq/compound-mini"
-        payload = {
-            "model": model_name,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            "temperature": 0.0,
-            "max_tokens": 300
-        }
-        resp = await self.client.post(self.groq_url, headers=headers, json=payload)
-        if resp.status_code == 200:
-            data = resp.json()
-            raw_answer = data["choices"][0]["message"]["content"].strip()
-            # Clean thinking tokens if present
-            if "</think>" in raw_answer:
-                raw_answer = raw_answer.split("</think>")[-1].strip()
-            elif "<think>" in raw_answer:
-                raw_answer = raw_answer.replace("<think>", "").strip()
-            if raw_answer and len(raw_answer) > 5:
-                return raw_answer, {"model_used": model_name, "usage": data.get("usage", {})}
+        # Try primary model first, fallback to fast 20b model on Groq
+        models_to_try = [settings.llm_model or "groq/compound-mini", "openai/gpt-oss-20b"]
+        for model_name in models_to_try:
+            payload = {
+                "model": model_name,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                "temperature": 0.0,
+                "max_tokens": 300
+            }
+            try:
+                resp = await self.client.post(self.groq_url, headers=headers, json=payload)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    raw_answer = data["choices"][0]["message"]["content"].strip()
+                    # Clean thinking tokens if present
+                    if "</think>" in raw_answer:
+                        raw_answer = raw_answer.split("</think>")[-1].strip()
+                    elif "<think>" in raw_answer:
+                        raw_answer = raw_answer.replace("<think>", "").strip()
+                    if raw_answer and len(raw_answer) > 5:
+                        return raw_answer, {"model_used": model_name, "usage": data.get("usage", {})}
+            except Exception:
+                continue
 
-        raise RuntimeError(f"Groq returned status {resp.status_code}: {resp.text}")
+        raise RuntimeError(f"Groq API calls failed for models: {models_to_try}")
 
     async def _call_gemini(self, system_prompt: str, user_prompt: str) -> Tuple[str, Dict[str, Any]]:
         gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={settings.gemini_api_key}"
