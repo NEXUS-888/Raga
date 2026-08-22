@@ -9,6 +9,7 @@ class TopicGuard:
     """
     def __init__(self):
         self.goa_keywords = {
+            # English & Western transliterations
             'goa', 'goan', 'panaji', 'panjim', 'vasco', 'margao', 'konkani', 'marathi',
             'baga', 'calangute', 'anjuna', 'palolem', 'colva', 'vagator', 'arambol',
             'aguada', 'chapora', 'reis magos', 'bom jesus', 'cathedral', 'dudhsagar', 'mandovi', 'zuari',
@@ -17,14 +18,38 @@ class TopicGuard:
             'shigmo', 'carnival', 'sao joao', 'bonderam', 'mando', 'fugdi', 'dhalo', 'ghumot',
             'fontainhas', 'divar', 'chorao', 'mapusa', 'arpora', 'operation vijay', 'liberation',
             'monsoon', 'kerala monsoon', 'weather', 'climate',
-            'गोवा', 'पणजी', 'कोंकणी', 'मराठी', 'बेबिंका', 'फेनी', 'जाकुती', 'विंदालू', 'अगुआड़ा', 'दूधसागर', 'मंगेशी', 'शांतादुर्गा', 'तांबडी सुरला', 'शिगमो', 'खान-पान'
+            # Hindi / Marathi / Konkani (Devanagari)
+            'गोवा', 'पणजी', 'कोंकणी', 'मराठी', 'बेबिंका', 'फेनी', 'जाकुती', 'विंदालू', 'अगुआड़ा', 'दूधसागर', 'मंगेशी', 'शांतादुर्गा', 'तांबडी सुरला', 'शिगमो', 'खान-पान',
+            # Kannada (ಕನ್ನಡ)
+            'ಗೋವಾ', 'ಗೋವಾದ', 'ಪಣಜಿ', 'ಕೊಂಕಣಿ', 'ಮರಾಠಿ', 'ಬಾಗಾ', 'ಕಲಂಗೂಟ್', 'ಅಂಜುನಾ', 'ಮಂಗೇಶಿ', 'ಶಾಂತಾದುರ್ಗಾ', 'ದೂಧ್‌ಸಾಗರ್',
+            # Telugu (తెలుగు)
+            'గోవా', 'పనాజీ', 'కొంకణి', 'మంగేషి', 'శాంతాదుర్గా', 'దూధ్‌సాగర్',
+            # Tamil (தமிழ்)
+            'கோவா', 'பனாஜி', 'கொங்கணி', 'மங்கேஷி', 'சாந்தாதுர்கா',
+            # Bengali (বাংলা)
+            'গোয়া', 'পানাজি', 'মঙ্গেশি', 'শান্তাদুর্গা', 'দুধসাগর',
+            # Gujarati (ગુજરાતી) & Malayalam (മലയാളം)
+            'ગોવા', 'પણજી', 'ഗോവ', 'പനാജി'
         }
 
         self.generic_goa_intents = {
             'beach', 'beaches', 'fort', 'forts', 'church', 'churches', 'temple', 'temples', 'mandir', 'waterfall', 'waterfalls',
             'food', 'foods', 'seafood', 'fish curry', 'cuisine', 'cuisines', 'dish', 'dishes', 'traditional food',
             'festival', 'festivals', 'culture', 'tradition', 'traditions', 'history', 'liberation', 'market', 'markets', 'island', 'islands',
-            'समुद्र तट', 'बीच', 'किला', 'किले', 'चर्च', 'मंदिर', 'त्योहार', 'उत्सव', 'झरना', 'व्यंजन', 'भोजन', 'खान-पान', 'संस्कृति', 'इतिहास'
+            # Hindi / Devanagari
+            'समुद्र तट', 'बीच', 'किला', 'किले', 'चर्च', 'मंदिर', 'त्योहार', 'उत्सव', 'झरना', 'व्यंजन', 'भोजन', 'खान-पान', 'संस्कृति', 'इतिहास',
+            # Kannada (ಕನ್ನಡ)
+            'ಆಹಾರ', 'ಊಟ', 'ತಿಂಡಿ', 'ಕಡಲತೀರ', 'ಕಡಲತೀರಗಳು', 'ಬೀಚ್', 'ಕೋಟೆ', 'ಕೋಟೆಗಳು', 'ದೇವಸ್ಥಾನ', 'ದೇವಾಲಯ', 'ದೇವಾಲಯಗಳು', 'ರಾಜಧಾನಿ', 'ಹಬ್ಬ', 'ಸಂಸ್ಕೃತಿ', 'ಇತಿಹಾಸ', 'ಜಲಪಾತ',
+            # Telugu (తెలుగు)
+            'ఆహారం', 'భోజనం', 'బీచ్', 'కోట', 'దేవాలయం', 'దేవాలయాలు', 'రాజధాని', 'పండుగ', 'సంస్కృతి', 'చరిత్ర', 'జలపాతం',
+            # Tamil (தமிழ்)
+            'உணவு', 'கடற்கரை', 'கோட்டை', 'கோயில்', 'தலைநகரம்', 'திருவிழா', 'கலாச்சாரம்', 'வரலாறு', 'நீர்வீழ்ச்சி',
+            # Bengali (বাংলা)
+            'খাবার', 'সৈকত', 'কেল্লা', 'মন্দির', 'রাজধানী', 'উৎসব', 'সংস্কৃতি', 'ইতিহাস', 'জলপ্রপাত',
+            # Marathi (मराठी)
+            'जेवण', 'खाद्यपदार्थ', 'समुद्रकिनारा', 'किल्ला', 'देवूळ', 'सण',
+            # Gujarati (ગુજરાતી) & Malayalam (മലയാളം)
+            'ખોરાક', 'દરિયાકિનારો', 'કિલ્લો', 'મંદિર', 'રાજધાની', 'ഭക്ഷണം', 'കടൽത്തീരം', 'കോട്ട', 'ക്ഷേത്രം', 'തലസ്ഥാനം'
         }
 
         self.outside_entities = {

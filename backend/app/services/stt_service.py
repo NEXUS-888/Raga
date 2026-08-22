@@ -40,19 +40,33 @@ class SpeechToTextService:
         selected_provider = (provider or settings.stt_provider or "groq").lower()
         t0 = time.perf_counter()
         magic = audio_bytes[:4].hex() if len(audio_bytes) >= 4 else ""
-        print(f"[STT DEBUG] transcribe called: provider={selected_provider}, audio_len={len(audio_bytes)}, has_groq={bool(settings.groq_api_key)}, has_sarvam={bool(settings.sarvam_api_key)}, filename={filename}")
-
+        
         # Handle explicit mock provider (for unit tests only)
         if selected_provider in ["mock", "test"]:
             elapsed_ms = (time.perf_counter() - t0) * 1000
             test_text = "गोवा की राजधानी क्या है?" if "hi" in language_code.lower() else "What is the capital of Goa and what language is spoken there?"
             return test_text, elapsed_ms, {"provider": "mock_local_provider", "mode": "simulated_local", "language": language_code, "audio_bytes": len(audio_bytes)}
 
-        groq_attempted = False
+        # Check if language is an Indian language where Sarvam excels
+        is_indic_language = any(lang in language_code.lower() for lang in [
+            "kn", "te", "ta", "mr", "bn", "gu", "ml", "pa", "or", "as", "hi", "kok", "ne"
+        ])
+        
+        # If Indian language or explicit sarvam requested -> Use Sarvam AI Saaras as primary!
+        if settings.sarvam_api_key and (selected_provider in ["sarvam", "saaras"] or is_indic_language):
+            try:
+                print(f"[STT DEBUG] Calling _transcribe_sarvam for Indic language: {language_code}...")
+                transcript, meta = await self._transcribe_sarvam(audio_bytes, language_code, filename)
+                cleaned = _clean_transcript(transcript)
+                print(f"[STT DEBUG] Sarvam raw: {repr(transcript)}, cleaned: {repr(cleaned)}")
+                if cleaned:
+                    elapsed_ms = (time.perf_counter() - t0) * 1000
+                    return cleaned, elapsed_ms, {"provider": "sarvam_saaras", **meta}
+            except Exception as e:
+                print(f"[STT Error] Sarvam STT failed: {e}")
 
-        # 1. Primary: Groq Whisper (Ultra-fast ~100-300ms)
-        if settings.groq_api_key and selected_provider in ["groq", "whisper", "default"]:
-            groq_attempted = True
+        # 1. Primary for English / Global: Groq Whisper (Ultra-fast ~100-300ms)
+        if settings.groq_api_key and selected_provider in ["groq", "whisper", "default"] or not is_indic_language:
             try:
                 print(f"[STT DEBUG] Calling _transcribe_groq_whisper...")
                 transcript, meta = await self._transcribe_groq_whisper(audio_bytes, filename, language_code)
@@ -64,31 +78,19 @@ class SpeechToTextService:
             except Exception as e:
                 print(f"[STT Error] Groq Whisper API error: {e}")
 
-        # 2. Secondary / Fallback: Sarvam AI Saaras (Excels at Indian languages & Indian English accents)
-        if settings.sarvam_api_key:
+        # 2. Secondary fallback to Sarvam AI Saaras if not already called
+        if settings.sarvam_api_key and not is_indic_language:
             try:
-                print(f"[STT DEBUG] Calling _transcribe_sarvam...")
+                print(f"[STT DEBUG] Calling _transcribe_sarvam fallback...")
                 transcript, meta = await self._transcribe_sarvam(audio_bytes, language_code, filename)
                 cleaned = _clean_transcript(transcript)
-                print(f"[STT DEBUG] Sarvam raw: {repr(transcript)}, cleaned: {repr(cleaned)}")
                 if cleaned:
                     elapsed_ms = (time.perf_counter() - t0) * 1000
                     return cleaned, elapsed_ms, {"provider": "sarvam_saaras", **meta}
             except Exception as e:
                 print(f"[STT Error] Sarvam STT failed: {e}")
 
-        # 3. Tertiary: Retry Groq if Sarvam was primary and Groq was not attempted
-        if settings.groq_api_key and not groq_attempted:
-            try:
-                transcript, meta = await self._transcribe_groq_whisper(audio_bytes, filename, language_code)
-                cleaned = _clean_transcript(transcript)
-                if cleaned:
-                    elapsed_ms = (time.perf_counter() - t0) * 1000
-                    return cleaned, elapsed_ms, {"provider": "groq_whisper_large_v3", **meta}
-            except Exception as e:
-                print(f"[STT Error] Groq Whisper fallback error: {e}")
-
-        # 4. Quaternary: ElevenLabs API fallback
+        # 3. Tertiary: ElevenLabs API fallback
         if settings.elevenlabs_api_key:
             try:
                 transcript, meta = await self._transcribe_elevenlabs(audio_bytes, filename)
@@ -99,53 +101,28 @@ class SpeechToTextService:
             except Exception as e:
                 print(f"[STT Error] ElevenLabs API error: {e}")
 
-        # 5. If genuine speech was not recognized or audio was silence, return empty transcript
         elapsed_ms = (time.perf_counter() - t0) * 1000
-        if len(audio_bytes) < 100:
-            return "What is the capital of Goa and what language is spoken there?", elapsed_ms, {"provider": "test_mock_fallback"}
+        return "", elapsed_ms, {"provider": "none", "error": "All STT providers failed"}
 
-        return "", elapsed_ms, {"provider": "none", "error": "No speech detected in audio stream."}
-
-    async def _transcribe_groq_whisper(self, audio_bytes: bytes, filename: str, language_code: str = "en-IN") -> Tuple[str, Dict[str, Any]]:
+    async def _transcribe_groq_whisper(self, audio_bytes: bytes, filename: str, language_code: str) -> Tuple[str, Dict[str, Any]]:
         headers = {
             "Authorization": f"Bearer {settings.groq_api_key}"
         }
-        
-        # Auto-detect audio container from magic bytes or extension
         ext = "wav"
         content_type = "audio/wav"
-        if audio_bytes[:4] == b"RIFF":
+        if len(audio_bytes) >= 4 and audio_bytes[:4] == b"RIFF":
             ext = "wav"
             content_type = "audio/wav"
-        elif audio_bytes[:4] == b"\x1aE\xdf\xa3":
+        elif len(audio_bytes) >= 4 and audio_bytes[:4] == b"\x1a\x45\xdf\xa3":
             ext = "webm"
             content_type = "audio/webm"
-        elif len(audio_bytes) > 8 and audio_bytes[4:8] == b"ftyp":
-            ext = "m4a"
-            content_type = "audio/mp4"
-        elif audio_bytes[:4] == b"OggS":
-            ext = "ogg"
-            content_type = "audio/ogg"
         elif len(audio_bytes) >= 3 and audio_bytes[:3] == b"ID3":
             ext = "mp3"
             content_type = "audio/mpeg"
         elif len(audio_bytes) >= 2 and audio_bytes[0] == 0xFF and (audio_bytes[1] & 0xE0) == 0xE0:
             ext = "mp3"
             content_type = "audio/mpeg"
-        elif filename:
-            if filename.endswith(".wav"):
-                ext = "wav"
-                content_type = "audio/wav"
-            elif filename.endswith(".webm"):
-                ext = "webm"
-                content_type = "audio/webm"
-            elif filename.endswith(".mp3"):
-                ext = "mp3"
-                content_type = "audio/mpeg"
-            elif filename.endswith(".mp4") or filename.endswith(".m4a"):
-                ext = "m4a"
-                content_type = "audio/mp4"
-
+        
         files = {
             "file": (f"recording.{ext}", audio_bytes, content_type)
         }
@@ -156,25 +133,12 @@ class SpeechToTextService:
         }
         # If specific language is requested, set it; otherwise leave empty for Whisper Auto-Detection!
         if language_code and language_code.lower() != "auto":
-            if "hi" in language_code.lower():
-                data["language"] = "hi"
+            lang_prefix = language_code.split("-")[0].lower()
+            data["language"] = lang_prefix
+            if lang_prefix == "hi":
                 data["prompt"] = "गोवा, पर्यटन, पणजी, कलंगूट, भोजन, संस्कृति, समुद्र तट, मौसम, इतिहास, यात्रा"
-            elif "mr" in language_code.lower():
-                data["language"] = "mr"
-            elif "bn" in language_code.lower():
-                data["language"] = "bn"
-            elif "ta" in language_code.lower():
-                data["language"] = "ta"
-            elif "te" in language_code.lower():
-                data["language"] = "te"
-            elif "gu" in language_code.lower():
-                data["language"] = "gu"
-            elif "kn" in language_code.lower():
-                data["language"] = "kn"
-            elif "ml" in language_code.lower():
-                data["language"] = "ml"
-            elif "pa" in language_code.lower():
-                data["language"] = "pa"
+            elif lang_prefix in ["kn", "te", "ta", "mr", "bn", "gu", "ml", "pa", "or"]:
+                data["prompt"] = "Goa, tourism, beaches, Panaji, food, culture, temples, history"
             else:
                 data["language"] = "en"
                 data["prompt"] = "Goa tourism, travel, food, beaches, Panaji, Calangute, heritage, culture, churches, seafood, sightseeing, weather"
@@ -193,9 +157,31 @@ class SpeechToTextService:
         headers = {
             "api-subscription-key": settings.sarvam_api_key
         }
-        sarvam_lang = "hi-IN" if "hi" in language_code.lower() else "en-IN"
+        
+        # Complete Sarvam Saaras Indian BCP-47 language mapping
+        sarvam_lang_map = {
+            "kn": "kn-IN", "kannada": "kn-IN",
+            "te": "te-IN", "telugu": "te-IN",
+            "ta": "ta-IN", "tamil": "ta-IN",
+            "mr": "mr-IN", "marathi": "mr-IN",
+            "kok": "mr-IN", "konkani": "mr-IN",  # Sarvam processes Konkani via Marathi/Devanagari model
+            "hi": "hi-IN", "hindi": "hi-IN", "hinglish": "hi-IN",
+            "bn": "bn-IN", "bengali": "bn-IN",
+            "gu": "gu-IN", "gujarati": "gu-IN",
+            "ml": "ml-IN", "malayalam": "ml-IN",
+            "pa": "pa-IN", "punjabi": "pa-IN",
+            "or": "or-IN", "odia": "or-IN",
+            "as": "as-IN", "assamese": "as-IN",
+            "ne": "ne-NP", "nepali": "ne-NP",
+            "en": "en-IN", "english": "en-IN",
+            "auto": "unknown"
+        }
+        
+        norm_code = language_code.lower().split("-")[0]
+        sarvam_lang = sarvam_lang_map.get(norm_code, "en-IN")
         if language_code.lower() == "auto":
             sarvam_lang = "unknown"
+            
         files = {
             "file": (filename if filename.endswith(('.wav', '.mp3', '.m4a', '.webm')) else "audio.wav", audio_bytes, "audio/wav")
         }

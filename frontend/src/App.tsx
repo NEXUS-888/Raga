@@ -48,13 +48,15 @@ export const App: React.FC = () => {
     setIsListening(false);
     setErrorMsg(null);
 
-    // Priority 1: If browser SpeechRecognition captured the words directly, execute immediately!
-    if (transcript && transcript.trim().length > 1) {
+    const isIndicLang = ['kn', 'te', 'ta', 'mr', 'bn', 'gu', 'ml', 'pa', 'or', 'as', 'kok', 'hi'].includes(language);
+
+    // If English or browser captured valid non-romanized characters and no audio, use direct text
+    if (!isIndicLang && transcript && transcript.trim().length > 1 && (!audioBlob || audioBlob.size <= 500)) {
       await handleTextSubmit(transcript.trim());
       return;
     }
 
-    // Priority 2: If SpeechRecognition was quiet but audio was recorded, send audio to Groq Whisper backend
+    // Priority for Indian languages & recorded audio: Send audio to backend (Sarvam AI Saaras for Indic languages!)
     if (audioBlob && audioBlob.size > 500) {
       if (!isRevealed) {
         setIsRevealed(true);
@@ -72,7 +74,7 @@ export const App: React.FC = () => {
 
         formData.append('file', audioBlob, filename);
         formData.append('chunking_strategy', chunkingStrategy);
-        formData.append('stt_provider', 'groq');
+        formData.append('stt_provider', isIndicLang ? 'sarvam' : 'groq');
         formData.append('language', language);
         formData.append('top_k', '3');
         if (llmProvider !== 'auto') {
@@ -93,6 +95,8 @@ export const App: React.FC = () => {
       } finally {
         setIsLoading(false);
       }
+    } else if (transcript && transcript.trim().length > 1) {
+      await handleTextSubmit(transcript.trim());
     } else {
       setErrorMsg("No voice detected from your microphone. Please click the mic and speak clearly.");
     }

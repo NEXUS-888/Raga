@@ -168,6 +168,37 @@ class HybridVectorDB:
         if "history" in sparse_q or "liberation" in sparse_q:
             sparse_q = sparse_q.replace("history", "history portuguese operation vijay 1961 kadamba").replace("liberation", "liberation operation vijay 1961")
 
+        # Indic Cross-Lingual Recall Expansion:
+        # Kannada (ಕನ್ನಡ)
+        if any(c in sparse_q for c in ["ಗೋವಾ", "ಗೋವಾದ"]): sparse_q += " goa"
+        if any(c in sparse_q for c in ["ಆಹಾರ", "ಊಟ", "ತಿಂಡಿ"]): sparse_q += " food dishes fish curry rice bebinca xacuti"
+        if any(c in sparse_q for c in ["ಕಡಲತೀರ", "ಬೀಚ್", "ಕಡಲತೀರಗಳು"]): sparse_q += " beach beaches baga calangute anjuna palolem"
+        if any(c in sparse_q for c in ["ದೇವಸ್ಥಾನ", "ದೇವಾಲಯ", "ದೇವಾಲಯಗಳು"]): sparse_q += " temple temples mangueshi shantadurga tambdi surla"
+        if any(c in sparse_q for c in ["ರಾಜಧಾನಿ", "ಪಣಜಿ"]): sparse_q += " capital panaji panjim"
+        if any(c in sparse_q for c in ["ಕೋಟೆ", "ಕೋಟೆಗಳು"]): sparse_q += " fort aguada chapora"
+        if any(c in sparse_q for c in ["ಹಬ್ಬ", "ಹಬ್ಬಗಳು"]): sparse_q += " festival shigmo carnival sao joao"
+
+        # Telugu (తెలుగు)
+        if "గోవా" in sparse_q: sparse_q += " goa"
+        if any(c in sparse_q for c in ["ఆహారం", "భోజనం"]): sparse_q += " food dishes fish curry rice"
+        if any(c in sparse_q for c in ["బీచ్", "బీచ్‌లు"]): sparse_q += " beach beaches baga"
+        if any(c in sparse_q for c in ["దేవాలయం", "దేవాలయాలు"]): sparse_q += " temple temples mangueshi"
+        if "రాಜಧాని" in sparse_q or "రాజధాని" in sparse_q: sparse_q += " capital panaji"
+
+        # Tamil (தமிழ்)
+        if "கோவா" in sparse_q: sparse_q += " goa"
+        if "உணவு" in sparse_q: sparse_q += " food dishes fish curry"
+        if "கடற்கரை" in sparse_q: sparse_q += " beach beaches"
+        if "கோயில்" in sparse_q: sparse_q += " temple temples"
+        if "தலைநகரம்" in sparse_q: sparse_q += " capital panaji"
+
+        # Bengali (বাংলা)
+        if "গোয়া" in sparse_q: sparse_q += " goa"
+        if "খাবার" in sparse_q: sparse_q += " food dishes fish curry"
+        if "সৈকত" in sparse_q: sparse_q += " beach beaches"
+        if "মন্দির" in sparse_q: sparse_q += " temple temples"
+        if "রাজধানী" in sparse_q: sparse_q += " capital panaji"
+
         # 1. Dense Embedding & Vector Search
         t_dense_0 = time.perf_counter()
         query_vec = self.embedding_engine.embed(sparse_q)

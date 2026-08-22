@@ -30,6 +30,28 @@ class LLMService:
         q_lower = query.lower().strip()
         words = q_lower.split()
         
+        # 0. Check for Regional Indic Scripts (Kannada, Telugu, Tamil, Bengali, Malayalam, Gujarati, Punjabi, Odia)
+        # These require cross-lingual synthesis into the user's native script
+        indic_scripts = (
+            '\u0C80', '\u0CFF',  # Kannada
+            '\u0C00', '\u0C7F',  # Telugu
+            '\u0B80', '\u0BFF',  # Tamil
+            '\u0980', '\u09FF',  # Bengali
+            '\u0D00', '\u0D7F',  # Malayalam
+            '\u0A80', '\u0AFF',  # Gujarati
+            '\u0A00', '\u0A7F',  # Gurmukhi/Punjabi
+            '\u0B00', '\u0B7F',  # Odia
+        )
+        is_regional_indic = False
+        for i in range(0, len(indic_scripts), 2):
+            start_range, end_range = indic_scripts[i], indic_scripts[i+1]
+            if any(start_range <= ch <= end_range for ch in query):
+                is_regional_indic = True
+                break
+        
+        if is_regional_indic:
+            return "cloud_llm_path", "Regional Indic script query routed to multilingual LLM for native script synthesis."
+
         # 1. Direct Factual / Lookup / Entity Triggers -> Turbo Fast Path (<20ms)
         factual_starters = ("what is", "what are", "where is", "when was", "who is", "which is", "how does", "how do", "capital of", "official language", "how many", "tell me about")
         if any(q_lower.startswith(starter) for starter in factual_starters) or len(words) <= 8:
