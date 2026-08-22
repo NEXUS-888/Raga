@@ -204,7 +204,7 @@ class LLMService:
         raise RuntimeError(f"Groq returned status {resp.status_code}: {resp.text}")
 
     async def _call_gemini(self, system_prompt: str, user_prompt: str) -> Tuple[str, Dict[str, Any]]:
-        gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={settings.gemini_api_key}"
+        gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={settings.gemini_api_key}"
         headers = {"Content-Type": "application/json"}
         payload = {
             "system_instruction": {
@@ -230,7 +230,7 @@ class LLMService:
                     parts = candidates[0].get("content", {}).get("parts", [])
                     if parts and "text" in parts[0]:
                         answer = parts[0]["text"].strip()
-                        return answer, {"model_used": "gemini-1.5-flash"}
+                        return answer, {"model_used": "gemini-3.6-flash"}
             raise RuntimeError(f"Gemini API returned status {resp.status_code}: {resp.text}")
 
     def _synthesize_local_grounded_answer(self, query: str, chunks: List[Chunk]) -> str:
