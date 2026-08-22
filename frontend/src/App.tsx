@@ -48,15 +48,15 @@ export const App: React.FC = () => {
     setIsListening(false);
     setErrorMsg(null);
 
-    const isIndicLang = ['kn', 'te', 'ta', 'mr', 'bn', 'gu', 'ml', 'pa', 'or', 'as', 'kok', 'hi'].includes(language);
+    const isIndicOrAuto = ['kn', 'te', 'ta', 'mr', 'bn', 'gu', 'ml', 'pa', 'or', 'as', 'kok', 'hi', 'auto', 'hinglish'].includes(language);
 
     // If English or browser captured valid non-romanized characters and no audio, use direct text
-    if (!isIndicLang && transcript && transcript.trim().length > 1 && (!audioBlob || audioBlob.size <= 500)) {
+    if (!isIndicOrAuto && transcript && transcript.trim().length > 1 && (!audioBlob || audioBlob.size <= 500)) {
       await handleTextSubmit(transcript.trim());
       return;
     }
 
-    // Priority for Indian languages & recorded audio: Send audio to backend (Sarvam AI Saaras for Indic languages!)
+    // Priority for Indian languages & recorded audio: Send audio to backend (Sarvam AI Saaras for Indic languages & Auto-detect!)
     if (audioBlob && audioBlob.size > 500) {
       if (!isRevealed) {
         setIsRevealed(true);
@@ -74,7 +74,7 @@ export const App: React.FC = () => {
 
         formData.append('file', audioBlob, filename);
         formData.append('chunking_strategy', chunkingStrategy);
-        formData.append('stt_provider', isIndicLang ? 'sarvam' : 'groq');
+        formData.append('stt_provider', isIndicOrAuto ? 'sarvam' : 'groq');
         formData.append('language', language);
         formData.append('top_k', '3');
         if (llmProvider !== 'auto') {
@@ -113,13 +113,14 @@ export const App: React.FC = () => {
     setErrorMsg(null);
 
     try {
+      const isIndicOrAuto = ['kn', 'te', 'ta', 'mr', 'bn', 'gu', 'ml', 'pa', 'or', 'as', 'kok', 'hi', 'auto', 'hinglish'].includes(language);
       const res = await fetch(`${API_BASE}/api/rag/query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query_text: text,
           chunking_strategy: chunkingStrategy,
-          stt_provider: 'groq',
+          stt_provider: isIndicOrAuto ? 'sarvam' : 'groq',
           llm_provider: llmProvider === 'auto' ? undefined : (llmProvider === 'groq' ? 'groq' : 'turbo'),
           language: language,
           top_k: 3
@@ -149,6 +150,7 @@ export const App: React.FC = () => {
 
   const [selectedPromptCategory, setSelectedPromptCategory] = useState<'goa' | 'cuisine' | 'indic' | 'guardrail' | 'cs'>('goa');
 
+  // Dynamic Prompt categories supporting the active language
   const promptCategories: Record<string, { label: string; questions: string[] }> = {
     goa: {
       label: "🌴 Goa Heritage",
@@ -167,8 +169,33 @@ export const App: React.FC = () => {
       ]
     },
     indic: {
-      label: "🗣️ कोंकणी व हिंदी",
-      questions: [
+      label: language === 'kn' ? "🪔 ಕನ್ನಡ (Kannada)" :
+             language === 'te' ? "🪔 తెలుగు (Telugu)" :
+             language === 'ta' ? "🪔 தமிழ் (Tamil)" :
+             language === 'mr' ? "🪔 मराठी (Marathi)" :
+             language === 'bn' ? "🪔 বাংলা (Bengali)" :
+             "🗣️ कोंकणी व हिंदी",
+      questions: language === 'kn' ? [
+        "ಗೋವಾದ ರಾಜಧಾನಿ ಮತ್ತು ಅಧಿಕೃತ ಭಾಷೆ ಯಾವುದು?",
+        "ಗೋವಾದ ಅತ್ಯಂತ ಪ್ರಸಿದ್ಧ ಆಹಾರ ಯಾವುದು?",
+        "ಗೋವಾದ ಪ್ರಮುಖ ದೇವಾಲಯಗಳು ಯಾವುವು?"
+      ] : language === 'te' ? [
+        "గోవా రాజధాని మరియు అధికారిక భాష ఏమిటి?",
+        "గోవాలో అత్యంత ప్రసిద్ధ ఆహారం ఏమిటి?",
+        "గోవాలోని ప్రసిద్ధ దేవాలయాలు ఏమిటి?"
+      ] : language === 'ta' ? [
+        "கோவாவின் தலைநகரம் மற்றும் அதிகாரப்பூர்வ மொழி எது?",
+        "கோவாவின் பாரம்பரிய சிறப்பு உணவு என்ன?",
+        "கோவாவின் புகழ்பெற்ற கடற்கரைகள் யாவை?"
+      ] : language === 'mr' ? [
+        "गोव्याची राजधानी आणि अधिकृत भाषा कोणती आहे?",
+        "गोव्याचे प्रसिद्ध पारंपारिक खाद्यपदार्थ कोणते आहेत?",
+        "गोव्यातील प्रसिद्ध मंदिरे कोणती आहेत?"
+      ] : language === 'bn' ? [
+        "গোয়ার রাজধানী এবং সরকারী ভাষা কী?",
+        "গোয়ার সবচেয়ে বিখ্যাত খাবার কী?",
+        "গোয়ার বিখ্যাত সমুদ্র সৈকত কোনগুলো?"
+      ] : [
         "गोवा की राजधानी और आधिकारिक भाषा क्या है?",
         "गोवा का सबसे प्रसिद्ध भोजन क्या है?",
         "दूधसागर जलप्रपात किस नदी पर स्थित है?"

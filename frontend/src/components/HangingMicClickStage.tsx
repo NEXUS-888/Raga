@@ -12,7 +12,7 @@ interface HangingMicClickStageProps {
 }
 
 const SPEECH_LANG_MAP: Record<string, string> = {
-  'auto': 'en-IN',
+  'auto': '',
   'hi': 'hi-IN',
   'hinglish': 'hi-IN',
   'en': 'en-IN',

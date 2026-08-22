@@ -47,12 +47,12 @@ class SpeechToTextService:
             test_text = "गोवा की राजधानी क्या है?" if "hi" in language_code.lower() else "What is the capital of Goa and what language is spoken there?"
             return test_text, elapsed_ms, {"provider": "mock_local_provider", "mode": "simulated_local", "language": language_code, "audio_bytes": len(audio_bytes)}
 
-        # Check if language is an Indian language where Sarvam excels
+        # Check if language is an Indian language or Auto-detect where Sarvam Saaras excels
         is_indic_language = any(lang in language_code.lower() for lang in [
-            "kn", "te", "ta", "mr", "bn", "gu", "ml", "pa", "or", "as", "hi", "kok", "ne"
+            "kn", "te", "ta", "mr", "bn", "gu", "ml", "pa", "or", "as", "hi", "kok", "ne", "auto"
         ])
         
-        # If Indian language or explicit sarvam requested -> Use Sarvam AI Saaras as primary!
+        # If Indian language, Auto-detect, or explicit sarvam requested -> Use Sarvam AI Saaras as primary!
         if settings.sarvam_api_key and (selected_provider in ["sarvam", "saaras"] or is_indic_language):
             try:
                 print(f"[STT DEBUG] Calling _transcribe_sarvam for Indic language: {language_code}...")
