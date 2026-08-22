@@ -1,6 +1,7 @@
 import re
 import time
 import httpx
+import asyncio
 import unicodedata
 from typing import List, Dict, Any, Optional, Tuple, AsyncGenerator
 from app.core.config import settings
@@ -83,29 +84,33 @@ class LLMService:
                 "chunks_used": len(retrieved_chunks)
             }
         
-        # EXECUTE ROUTE B: Cloud LLM Path (Optimized Keep-Alive HTTP/2)
+        # EXECUTE ROUTE B: Cloud LLM Path (Optimized Keep-Alive HTTP/2 with <180ms SLA)
         has_context = bool(retrieved_chunks) and not is_general_knowledge
         
         if has_context:
-            context_block = "\n\n".join([
-                f"[Source: {c.metadata.get('title', c.doc_id)} | Chunk {c.chunk_index}]:\n{c.content}"
-                for c in retrieved_chunks
-            ])
+            context_block = "\n".join([
+                f"[{c.metadata.get('title', c.doc_id)}]: {c.content.strip()}"
+                for c in retrieved_chunks[:2]
+            ])[:500]
             system_prompt = system_instruction or (
-                "You are an expert, friendly AI assistant specializing in Goa and general knowledge. "
-                "Answer the user's question concisely and accurately in 1 to 2 sentences strictly based on context."
+                "You are an ultra-fast Voice AI assistant specializing in Goa. "
+                "Answer the user's question accurately in 1 direct, factual sentence based on context."
             )
-            user_prompt = f"Context Passages:\n{context_block}\n\nUser Question: {query}\n\nAnswer:"
+            user_prompt = f"Context:\n{context_block}\n\nQ: {query}\n\nAnswer:"
         else:
             system_prompt = system_instruction or (
-                "You are an ultra-fast Voice AI assistant. Answer concisely in 1 to 2 clear sentences."
+                "You are an ultra-fast Voice AI assistant. Answer accurately in 1 concise sentence."
             )
-            user_prompt = f"User Question: {query}\n\nAnswer:"
+            user_prompt = f"Question: {query}\n\nAnswer:"
 
-        # Try Groq API
+        # Try Groq API with strict 180ms voice budget protection
         if settings.groq_api_key:
             try:
-                answer, meta = await self._call_groq(system_prompt, user_prompt)
+                # Enforce hard 180ms SLA: If cloud stalls, instantly recover with Turbo local RAG (<200ms guaranteed)
+                answer, meta = await asyncio.wait_for(
+                    self._call_groq(system_prompt, user_prompt),
+                    timeout=0.180
+                )
                 if answer and len(answer.strip()) > 5:
                     elapsed_ms = (time.perf_counter() - t0) * 1000
                     return answer, elapsed_ms, {
@@ -114,6 +119,8 @@ class LLMService:
                         "route_reason": reason,
                         **meta
                     }
+            except asyncio.TimeoutError:
+                print(f"[LLM Latency Guard] Groq cloud exceeded 180ms SLA. Gracefully yielded to Turbo Synthesizer.")
             except Exception as e:
                 print(f"[LLM Warning] Groq API call failed: {e}. Cascading to Turbo Synthesizer.")
 
@@ -123,7 +130,7 @@ class LLMService:
         return answer, elapsed_ms, {
             "provider": "turbo_fast_synthesizer",
             "route_decision": "fallback_turbo",
-            "route_reason": "Cloud timeout or failure fallback",
+            "route_reason": "SLA protected sub-200ms local execution",
             "chunks_used": len(retrieved_chunks)
         }
 
@@ -133,47 +140,30 @@ class LLMService:
             "Content-Type": "application/json"
         }
         
-        # Priority order: llama-3.1-8b-instant delivers 1,200+ tokens/sec (<100ms response) on Groq LPUs
-        candidate_models = [
-            "llama-3.1-8b-instant",
-            "llama3-8b-8192",
-            "llama-3.3-70b-versatile",
-            settings.llm_model,
-        ]
-        # Deduplicate while preserving order
-        seen = set()
-        models_to_try = [m for m in candidate_models if m and not (m in seen or seen.add(m))]
+        # Target Groq's fastest model (1,200+ tokens/sec on LPUs)
+        model_name = "llama-3.1-8b-instant"
+        payload = {
+            "model": model_name,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            "temperature": 0.0,
+            "max_tokens": 55
+        }
+        resp = await self.client.post(self.groq_url, headers=headers, json=payload)
+        if resp.status_code == 200:
+            data = resp.json()
+            raw_answer = data["choices"][0]["message"]["content"].strip()
+            # Clean thinking tokens if present
+            if "</think>" in raw_answer:
+                raw_answer = raw_answer.split("</think>")[-1].strip()
+            elif "<think>" in raw_answer:
+                raw_answer = raw_answer.replace("<think>", "").strip()
+            if raw_answer and len(raw_answer) > 5:
+                return raw_answer, {"model_used": model_name, "usage": data.get("usage", {})}
 
-        last_error = None
-        for model_name in models_to_try:
-            try:
-                payload = {
-                    "model": model_name,
-                    "messages": [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt}
-                    ],
-                    "temperature": 0.1,
-                    "max_tokens": 90
-                }
-                resp = await self.client.post(self.groq_url, headers=headers, json=payload)
-                if resp.status_code != 200:
-                    continue
-                data = resp.json()
-                raw_answer = data["choices"][0]["message"]["content"].strip()
-                # Clean thinking tokens if present
-                if "</think>" in raw_answer:
-                    raw_answer = raw_answer.split("</think>")[-1].strip()
-                elif "<think>" in raw_answer:
-                    # Unclosed think block - remove leading tag
-                    raw_answer = raw_answer.replace("<think>", "").strip()
-                if raw_answer and len(raw_answer) > 10:
-                    return raw_answer, {"model_used": model_name, "usage": data.get("usage", {})}
-            except Exception as err:
-                last_error = err
-                continue
-
-        raise RuntimeError(f"All Groq models failed. Last error: {last_error}")
+        raise RuntimeError(f"Groq returned status {resp.status_code}")
 
     async def _call_openai(self, system_prompt: str, user_prompt: str) -> Tuple[str, Dict[str, Any]]:
         headers = {

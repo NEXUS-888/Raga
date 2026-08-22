@@ -24,8 +24,7 @@ class Settings(BaseSettings):
     llm_provider: str = os.getenv("LLM_PROVIDER", "groq")  # "groq", "gemini", "openai", or "mock"
     groq_api_key: str = os.getenv("GROQ_API_KEY", "")
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
-    openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
-    llm_model: str = os.getenv("LLM_MODEL", "llama-3.3-70b-versatile")
+    llm_model: str = os.getenv("LLM_MODEL", "llama-3.1-8b-instant")
 
     # Latency Constraints (ms)
     latency_target_ms: float = 200.0
