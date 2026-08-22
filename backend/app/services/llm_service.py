@@ -113,25 +113,25 @@ class LLMService:
             context_block = "\n".join([
                 f"[{c.metadata.get('title', c.doc_id)}]: {c.content.strip()}"
                 for c in retrieved_chunks[:2]
-            ])[:500]
+            ])[:700]
             system_prompt = system_instruction or (
-                "You are an ultra-fast Voice AI assistant specializing in Goa. "
-                "Answer the user's question accurately in 1 direct, factual sentence based on context."
+                "You are an ultra-fast Voice AI assistant specializing in Goa tourism, cuisine, culture, and history. "
+                "Answer the user strictly in the EXACT SAME LANGUAGE and SCRIPT as their question (e.g. Kannada, Telugu, Tamil, Marathi, Bengali, Hindi, English). "
+                "Give a direct, concise 1-sentence factual answer based on the context."
             )
-            user_prompt = f"Context:\n{context_block}\n\nQ: {query}\n\nAnswer:"
+            user_prompt = f"Context:\n{context_block}\n\nQuestion: {query}\n\nAnswer:"
         else:
             system_prompt = system_instruction or (
-                "You are an ultra-fast Voice AI assistant. Answer accurately in 1 concise sentence."
+                "You are an ultra-fast Voice AI assistant for Goa. Answer accurately in 1 concise sentence in the user's language."
             )
             user_prompt = f"Question: {query}\n\nAnswer:"
 
-        # Try Groq API with strict 180ms voice budget protection
+        # Try Groq API
         if settings.groq_api_key:
             try:
-                # Enforce hard 180ms SLA: If cloud stalls, instantly recover with Turbo local RAG (<200ms guaranteed)
                 answer, meta = await asyncio.wait_for(
                     self._call_groq(system_prompt, user_prompt),
-                    timeout=0.180
+                    timeout=3.5
                 )
                 if answer and len(answer.strip()) > 5:
                     elapsed_ms = (time.perf_counter() - t0) * 1000
@@ -142,7 +142,7 @@ class LLMService:
                         **meta
                     }
             except asyncio.TimeoutError:
-                print(f"[LLM Latency Guard] Groq cloud exceeded 180ms SLA. Gracefully yielded to Turbo Synthesizer.")
+                print(f"[LLM Latency Guard] Groq cloud exceeded timeout. Cascading to Turbo Synthesizer.")
             except Exception as e:
                 print(f"[LLM Warning] Groq API call failed: {e}. Cascading to Turbo Synthesizer.")
 
@@ -152,7 +152,7 @@ class LLMService:
         return answer, elapsed_ms, {
             "provider": "turbo_fast_synthesizer",
             "route_decision": "fallback_turbo",
-            "route_reason": "SLA protected sub-200ms local execution",
+            "route_reason": "Local grounded synthesizer execution",
             "chunks_used": len(retrieved_chunks)
         }
 
@@ -162,8 +162,8 @@ class LLMService:
             "Content-Type": "application/json"
         }
         
-        # Target Groq's fastest model (1,200+ tokens/sec on LPUs)
-        model_name = "llama-3.1-8b-instant"
+        # Target Groq's high-speed model
+        model_name = settings.llm_model or "groq/compound-mini"
         payload = {
             "model": model_name,
             "messages": [
@@ -171,7 +171,7 @@ class LLMService:
                 {"role": "user", "content": user_prompt}
             ],
             "temperature": 0.0,
-            "max_tokens": 55
+            "max_tokens": 100
         }
         resp = await self.client.post(self.groq_url, headers=headers, json=payload)
         if resp.status_code == 200:
@@ -296,6 +296,26 @@ class LLMService:
             "काने": ["फिश करी", "fish curry", "जाकुती", "xacuti", "विंदालू", "vindaloo", "बेबिंका", "bebinca", "फेनी", "feni", "बालचाओ", "व्यंजन", "भोजन", "खाना", "खान-पान"],
             "व्यंजन": ["फिश करी", "fish curry", "जाकुती", "xacuti", "विंदालू", "vindaloo", "बेबिंका", "bebinca", "फेनी", "feni", "बालचाओ", "व्यंजन", "भोजन", "खाना"],
             "भोजन": ["फिश करी", "fish curry", "जाकुती", "xacuti", "विंदालू", "vindaloo", "बेबिंका", "bebinca", "फेनी", "feni", "बालचाओ", "व्यंजन", "भोजन", "खाना"],
+            # Kannada (ಕನ್ನಡ)
+            "ಊಟ": ["curry", "rice", "dish", "dishes", "cuisine", "vindaloo", "xacuti", "bebinca", "feni", "food", "fish curry", "ಊಟ", "ಆಹಾರ", "ಖಾದ್ಯ"],
+            "ಆಹಾರ": ["curry", "rice", "dish", "dishes", "cuisine", "vindaloo", "xacuti", "bebinca", "feni", "food", "fish curry", "ಊಟ", "ಆಹಾರ", "ಖಾದ್ಯ"],
+            "ತಿಂಡಿ": ["curry", "rice", "dish", "dishes", "cuisine", "vindaloo", "xacuti", "bebinca", "feni", "food", "fish curry"],
+            "ಸಿಗುವುದು": ["curry", "rice", "food", "dishes", "restaurant", "fish curry", "bebinca"],
+            "ಕಡಲತೀರ": ["baga", "calangute", "anjuna", "palolem", "colva", "vagator", "arambol", "beach", "beaches"],
+            "ಬೀಚ್": ["baga", "calangute", "anjuna", "palolem", "colva", "vagator", "arambol", "beach", "beaches"],
+            "ದೇವಸ್ಥಾನ": ["mangueshi", "shanta durga", "tambdi surla", "temple", "temples"],
+            "ದೇವಾಲಯ": ["mangueshi", "shanta durga", "tambdi surla", "temple", "temples"],
+            "ಕೋಟೆ": ["aguada", "chapora", "reis magos", "fort", "forts"],
+            "ಹಬ್ಬ": ["shigmo", "carnival", "sao joao", "festival", "festivals"],
+            # Telugu (తెలుగు)
+            "ఆహారం": ["curry", "rice", "dish", "cuisine", "vindaloo", "xacuti", "bebinca", "feni", "fish curry"],
+            "భోజనం": ["curry", "rice", "dish", "cuisine", "vindaloo", "xacuti", "bebinca", "feni", "fish curry"],
+            "దేవాలయం": ["mangueshi", "shanta durga", "tambdi surla", "temple", "temples"],
+            # Tamil (தமிழ்)
+            "உணவு": ["curry", "rice", "dish", "cuisine", "vindaloo", "xacuti", "bebinca", "feni", "fish curry"],
+            "கடற்கரை": ["baga", "calangute", "anjuna", "palolem", "beach", "beaches"],
+            "கோயில்": ["mangueshi", "shanta durga", "tambdi surla", "temple", "temples"],
+            # English / Global
             "beach": ["baga", "calangute", "anjuna", "palolem", "colva", "vagator", "arambol", "coast", "beach", "beaches", "समुद्र तट", "बीच"],
             "beaches": ["baga", "calangute", "anjuna", "palolem", "colva", "vagator", "arambol", "coast", "beach", "beaches", "समुद्र तट", "बीच"],
             "fort": ["aguada", "chapora", "reis magos", "fort", "forts", "lighthouse", "किला", "किले"],
@@ -443,13 +463,22 @@ class LLMService:
 
         # Sort chunks by highest cumulative relevance score
         chunk_evals.sort(key=lambda x: x[0], reverse=True)
-        if chunk_evals and chunk_evals[0][0] >= 3.0:
-            top_chunk_sentences = [s for score, s in chunk_evals[0][1] if score >= 3.0][:2]
+        if chunk_evals and chunk_evals[0][0] > 0.0:
+            top_chunk_sentences = [s for score, s in chunk_evals[0][1] if score >= 2.0][:2]
             if not top_chunk_sentences and chunk_evals[0][1]:
                 top_chunk_sentences = [chunk_evals[0][1][0][1]]
             return " ".join(top_chunk_sentences)
 
-        # If query has low or no grounding match, provide a clean polite refusal rather than a random fort chunk
+        # Fallback to top sentence of first retrieved chunk if chunks are present
+        if chunks:
+            for line in chunks[0].content.split("\n"):
+                line_str = line.strip()
+                if line_str and not line_str.startswith("#"):
+                    parts = [p.strip() for p in line_str.split(". ") if p.strip()]
+                    if parts:
+                        return parts[0].rstrip(".") + "."
+
+        # If query has low or no grounding match, provide a clean polite refusal rather than a random chunk
         return f"I am your specialized Goa Voice AI Assistant. I don't have verified records matching '{query}' in the indexed Goa dataset. You can ask me about Goa's capital (Panaji), famous beaches (Baga, Anjuna), historic forts (Aguada, Chapora), or traditional cuisine (Fish Curry Rice, Bebinca)!"
 
 llm_service = LLMService()
