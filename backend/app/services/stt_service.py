@@ -189,12 +189,33 @@ class SpeechToTextService:
             "language_code": sarvam_lang,
             "model": "saaras:v3"
         }
+        # Multi-Key Rotation Pool: Try each available Sarvam key in order
+        keys_pool = settings.sarvam_api_keys
+        if not keys_pool and settings.sarvam_api_key:
+            keys_pool = [settings.sarvam_api_key]
+
+        last_err = None
         async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.post(self.sarvam_endpoint, headers=headers, data=data, files=files)
-            resp.raise_for_status()
-            res_json = resp.json()
-            transcript = res_json.get("transcript", "")
-            return transcript, {"raw": res_json}
+            for idx, key in enumerate(keys_pool):
+                headers = {"api-subscription-key": key}
+                try:
+                    resp = await client.post(self.sarvam_endpoint, headers=headers, data=data, files=files)
+                    if resp.status_code == 200:
+                        res_json = resp.json()
+                        transcript = res_json.get("transcript", "")
+                        return transcript, {"raw": res_json, "key_index_used": idx, "total_keys": len(keys_pool)}
+                    elif resp.status_code in [401, 402, 429]:
+                        print(f"[Sarvam Key Failover] Key #{idx+1} returned {resp.status_code} (depleted/rate-limited). Rotating to next key...")
+                        last_err = f"Key #{idx+1} status {resp.status_code}"
+                        continue
+                    else:
+                        resp.raise_for_status()
+                except Exception as e:
+                    print(f"[Sarvam Key Exception] Key #{idx+1} failed: {e}. Rotating to next key...")
+                    last_err = str(e)
+                    continue
+
+        raise RuntimeError(f"All {len(keys_pool)} Sarvam AI keys failed. Last error: {last_err}")
 
     async def _transcribe_elevenlabs(self, audio_bytes: bytes, filename: str) -> Tuple[str, Dict[str, Any]]:
         headers = {

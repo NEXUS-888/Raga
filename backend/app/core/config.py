@@ -20,6 +20,22 @@ class Settings(BaseSettings):
     sarvam_api_key: str = os.getenv("SARVAM_API_KEY", "")
     elevenlabs_api_key: str = os.getenv("ELEVENLABS_API_KEY", "")
 
+    @property
+    def sarvam_api_keys(self) -> List[str]:
+        keys: List[str] = []
+        raw = self.sarvam_api_key or os.getenv("SARVAM_API_KEY", "")
+        for k in raw.split(","):
+            cleaned = k.strip()
+            if cleaned and cleaned not in keys:
+                keys.append(cleaned)
+        for env_k in ["SARVAM_API_KEY_1", "SARVAM_API_KEY_2", "SARVAM_API_KEY_3", "SARVAM_API_KEYS"]:
+            val = os.getenv(env_k, "")
+            for k in val.split(","):
+                cleaned = k.strip()
+                if cleaned and cleaned not in keys:
+                    keys.append(cleaned)
+        return keys
+
     # LLM Settings (for sub-200ms generation)
     llm_provider: str = os.getenv("LLM_PROVIDER", "groq")  # "groq", "gemini", or "mock"
     groq_api_key: str = os.getenv("GROQ_API_KEY", "")
