@@ -218,7 +218,7 @@ class LLMService:
             ],
             "generationConfig": {
                 "temperature": 0.0,
-                "maxOutputTokens": 100
+                "maxOutputTokens": 1000
             }
         }
         async with httpx.AsyncClient(timeout=4.0) as client:
@@ -248,14 +248,26 @@ class LLMService:
             norm_query = norm_query.replace(k, v)
 
         # 1. Gracefully handle conversational greetings and self-intro queries
-        greetings = [
+        greetings_phrases = [
             "hello", "hi", "hey", "namaste", "good morning", "good evening", "good afternoon",
             "how are you", "who are you", "what can you do", "what's up", "whats up", "what is up",
             "sup", "wassup", "howdy", "how are things", "how's it going", "hows it going",
             "tell me a joke", "tell me something", "thank you", "thanks", "bye", "goodbye",
             "नमस्ते", "हेलो", "आप कौन हैं", "क्या हाल है", "सब कैसा है", "धन्यवाद", "शुक्रिया"
         ]
-        if any(norm_query.startswith(g) or g in norm_query for g in greetings) and not any(k in norm_query for k in ["beach", "capital", "food", "fort", "dish", "curry", "feni", "waterfall", "monsoon", "खाना", "व्यंजन", "भोजन", "राजधानी", "तट"]):
+        norm_words_list = re.findall(r'\b\w+\b', norm_query)
+        is_exact_greeting = (norm_query in greetings_phrases) or (
+            any(norm_query.startswith(g + " ") for g in greetings_phrases if len(g) > 2)
+        ) or (
+            norm_words_list and norm_words_list[0] in ["hello", "hey", "namaste", "नमस्ते", "हेलो"] and len(norm_words_list) <= 3
+        )
+        domain_keywords = [
+            "beach", "capital", "food", "fort", "dish", "curry", "feni", "waterfall", "monsoon",
+            "rajdhani", "bhasha", "bhasa", "language", "languages", "cuisine", "church", "churches",
+            "temple", "temples", "monument", "history", "culture", "panaji", "panjim", "margao", "vasco",
+            "खाना", "व्यंजन", "भोजन", "राजधानी", "तट", "भाषा", "मंदिर", "किला", "चर्च"
+        ]
+        if is_exact_greeting and not any(k in norm_query for k in domain_keywords):
             if any(w in norm_query for w in ["what's up", "whats up", "what is up", "sup", "wassup", "क्या हाल"]):
                 return "Not much, just here and ready to help! I am your Goa Voice AI Assistant. You can ask me anything about Goa's beaches, historic forts, local dishes, capital, or heritage!"
             elif any(w in norm_query for w in ["thank you", "thanks", "धन्यवाद", "शुक्रिया"]):
@@ -348,8 +360,13 @@ class LLMService:
             "church": ["church", "basilica", "bom jesus", "se cathedral", "xavier", "unesco", "चर्च", "कैथेड्रल"],
             "churches": ["church", "basilica", "bom jesus", "se cathedral", "xavier", "unesco", "चर्च", "कैथेड्रल"],
             "capital": ["panaji", "panjim", "vasco", "capital", "पणजी", "राजधानी"],
-            "राजधानी": ["पणजी", "panaji", "panjim", "राजधानी"],
-            "भाषा": ["कोंकणी", "मराठी", "konkani", "marathi", "भाषा"],
+            "rajdhani": ["panaji", "panjim", "vasco", "capital", "पणजी", "राजधानी", "konkani", "marathi", "language"],
+            "राजधानी": ["पणजी", "panaji", "panjim", "राजधानी", "कोंकणी", "मराठी", "भाषा"],
+            "language": ["konkani", "marathi", "devanagari", "language", "official language", "कोंकणी", "मराठी", "भाषा"],
+            "languages": ["konkani", "marathi", "devanagari", "language", "languages", "official language", "कोंकणी", "मराठी", "भाषा"],
+            "bhasha": ["कोंकणी", "मराठी", "konkani", "marathi", "भाषा", "official language", "devanagari"],
+            "bhashaye": ["कोंकणी", "मराठी", "konkani", "marathi", "भाषा", "official language", "devanagari"],
+            "भाषा": ["कोंकणी", "मराठी", "konkani", "marathi", "भाषा", "देवनागरी", "राजभाषा"],
             "waterfall": ["dudhsagar", "mandovi", "waterfall", "falls", "दूधसागर", "झरना"],
             "drink": ["feni", "sol kadi", "cashew", "beverage", "drink", "फेनी", "सोल कढ़ी"],
             "temple": ["temple", "temples", "mangueshi", "shanta durga", "shantadurga", "tambdi surla", "mahalasa", "damodar", "kamakshi", "nagueshi", "deepastambha", "mandir", "मंदिर"],
@@ -468,6 +485,14 @@ class LLMService:
                             s_score += 15.0
                         if any(w in s_lower for w in ["curry", "fish", "beach", "cuisine", "operation vijay"]):
                             s_score *= 0.1
+
+                    # 8. Capital & Official Language intent alignment
+                    is_capital_lang_query = any(w in norm_query for w in ["capital", "rajdhani", "language", "languages", "bhasha", "bhashaye", "official", "राजधानी", "भाषा", "राजभाषा", "कोंकणी", "पणजी"])
+                    if is_capital_lang_query:
+                        if any(w in s_lower for w in ["panaji", "panjim", "konkani", "marathi", "capital", "official language", "देवनागरी", "पणजी", "कोंकणी", "राजधानी", "राजभाषा", "भाषा"]):
+                            s_score += 25.0
+                        if any(w in s_lower for w in ["curry", "fish", "beach", "cuisine", "operation vijay"]):
+                            s_score *= 0.05
                                 
                     # Penalize climate/weather sentences if query is not about climate/weather
                     if any(w in s_lower for w in ["climate", "monsoon", "rainfall", "humidity", "weather"]) and not any(w in norm_query for w in ["climate", "monsoon", "rainfall", "rain", "weather", "season"]):
