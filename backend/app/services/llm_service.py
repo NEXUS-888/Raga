@@ -187,7 +187,7 @@ class LLMService:
                 {"role": "user", "content": user_prompt}
             ],
             "temperature": 0.0,
-            "max_tokens": 100
+            "max_tokens": 300
         }
         resp = await self.client.post(self.groq_url, headers=headers, json=payload)
         if resp.status_code == 200:
