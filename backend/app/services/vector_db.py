@@ -220,12 +220,14 @@ class HybridVectorDB:
             sparse_ranking = np.arange(len(self.chunks))
         sparse_time_ms = (time.perf_counter() - t_bm25_0) * 1000
 
-        # 3. Reciprocal Rank Fusion (RRF)
+        # 3. Reciprocal Rank Fusion (RRF) with relevance gating
         rrf_scores = np.zeros(len(self.chunks))
         for rank, idx in enumerate(dense_ranking):
-            rrf_scores[idx] += dense_weight * (1.0 / (rrf_k + rank + 1))
+            if dense_scores[idx] > 0.01:
+                rrf_scores[idx] += dense_weight * (1.0 / (rrf_k + rank + 1))
         for rank, idx in enumerate(sparse_ranking):
-            rrf_scores[idx] += sparse_weight * (1.0 / (rrf_k + rank + 1))
+            if bm25_scores[idx] > 0.01:
+                rrf_scores[idx] += sparse_weight * (1.0 / (rrf_k + rank + 1))
 
         # Top K selection
         top_indices = np.argsort(rrf_scores)[::-1][:top_k]
